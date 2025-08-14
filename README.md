@@ -1,9 +1,5 @@
 <p align="center">
-<<<<<<< HEAD
-  <img src="public/img/RPL.png" alt="Logo RPL" 
-=======
   <img src="./public/storage/img/RPL.png" alt="Logo RPL" 
->>>>>>> 7b29b90 (Update README.md)
        style="width: 200px; height: 200px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" />
 </p>
 
@@ -43,7 +39,7 @@ Proyek ini merupakan **project kedua** setelah **[Project E-Kasir](https://githu
 -   **MariaDB** – Basis Data
 -   **Apache2** – Web Server
 -   **Redis** – Cache & Optimasi Session
--   **PHP 8.4** – Bahasa Pemrograman
+-   **PHP 8.1** – Bahasa Pemrograman
 -   **WhatsApp API** – Pengiriman nota transaksi
 -   **Chart.js** – Visualisasi data penjualan
 
