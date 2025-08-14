@@ -1,5 +1,9 @@
 <p align="center">
+<<<<<<< HEAD
   <img src="public/img/RPL.png" alt="Logo RPL" 
+=======
+  <img src="./public/storage/img/RPL.png" alt="Logo RPL" 
+>>>>>>> 7b29b90 (Update README.md)
        style="width: 200px; height: 200px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" />
 </p>
 
