@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="public/img/RPL.png" alt="Logo RPL" 
+       style="width: 200px; height: 200px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" />
+</p>
+
 # 💊 PROYEK APOTEK
 
 Sistem manajemen apotek berbasis web yang dirancang untuk mempermudah proses penjualan obat, pengelolaan stok, serta pencatatan transaksi secara cepat dan akurat.  
