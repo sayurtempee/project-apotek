@@ -34,7 +34,7 @@ Proyek ini merupakan **project kedua** setelah **[Project E-Kasir](https://githu
 -   **MariaDB** – Basis Data
 -   **Apache2** – Web Server
 -   **Redis** – Cache & Optimasi Session
--   **PHP 8.1** – Bahasa Pemrograman
+-   **PHP 8.4** – Bahasa Pemrograman
 -   **WhatsApp API** – Pengiriman nota transaksi
 -   **Chart.js** – Visualisasi data penjualan
 
