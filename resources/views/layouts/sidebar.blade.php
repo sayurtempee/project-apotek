@@ -22,18 +22,20 @@
         <!-- Icons + Profile -->
         <div class="flex items-center space-x-2">
             <!-- Cart Icon -->
-            <a href="{{ route('cart.index') }}" title="Lihat keranjang">
-                <div
-                    class="w-10 h-10 bg-white border-2 border-[#2E7D32] rounded-full flex items-center justify-center relative shadow hover:scale-105 transition-transform duration-200">
-                    <i class="fas fa-shopping-cart text-[#2E7D32] text-lg"></i>
-                    @if (!empty($cartCount) && $cartCount > 0)
-                        <span
-                            class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 font-bold shadow">
-                            {{ $cartCount }}
-                        </span>
-                    @endif
-                </div>
-            </a>
+            @if (Auth::user()->role === 'kasir')
+                <a href="{{ route('cart.index') }}" title="Lihat keranjang">
+                    <div
+                        class="w-10 h-10 bg-white border-2 border-[#2E7D32] rounded-full flex items-center justify-center relative shadow hover:scale-105 transition-transform duration-200">
+                        <i class="fas fa-shopping-cart text-[#2E7D32] text-lg"></i>
+                        @if (!empty($cartCount) && $cartCount > 0)
+                            <span
+                                class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 font-bold shadow">
+                                {{ $cartCount }}
+                            </span>
+                        @endif
+                    </div>
+                </a>
+            @endif
 
             <!-- Profile Dropdown -->
             <div x-data="{ open: false }" class="relative">
@@ -115,9 +117,11 @@
                         </button>
                         <div x-show="open" x-collapse class="mt-2 pl-4 space-y-2 origin-top text-white">
                             <a href="{{ route('category.index') }}"
-                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar Kategori Obat</a>
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar
+                                Kategori Obat</a>
                             <a href="{{ route('category.create') }}"
-                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Tambah Kategori Obat</a>
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Tambah
+                                Kategori Obat</a>
                         </div>
                     </div>
                 @endif
@@ -147,11 +151,14 @@
                                 :class="{ 'rotate-180': open }"></i>
                         </button>
                         <div x-show="open" x-collapse class="mt-2 pl-4 space-y-2 origin-top text-white">
-                            <a href="{{ route('admin.index') }}" class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar
+                            <a href="{{ route('admin.index') }}"
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar
                                 Admin</a>
-                            <a href="{{ route('kasir.index') }}" class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar
+                            <a href="{{ route('kasir.index') }}"
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar
                                 Kasir</a>
-                            <a href="{{ route('kasir.create') }}" class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Tambah
+                            <a href="{{ route('kasir.create') }}"
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Tambah
                                 Kasir</a>
                         </div>
                     </div>
@@ -168,11 +175,13 @@
                     <div x-show="open" x-collapse class="mt-2 pl-4 space-y-2 origin-top text-white">
                         @if (Auth::user()->role === 'admin')
                             <a href="{{ route('members.index') }}"
-                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar Member</a>
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Daftar
+                                Member</a>
                         @endif
                         @if (Auth::user()->role === 'kasir')
                             <a href="{{ route('members.create') }}"
-                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Tambah Member</a>
+                                class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Tambah
+                                Member</a>
                         @endif
                     </div>
                 </div>
@@ -187,7 +196,8 @@
                     </button>
                     <div x-show="open" x-collapse class="mt-2 pl-4 space-y-2 origin-top text-white">
                         <a href="{{ route('transaction.history') }}"
-                            class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Riwayat Transaksi</a>
+                            class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Riwayat
+                            Transaksi</a>
                     </div>
                 </div>
 
@@ -201,7 +211,8 @@
                     </button>
                     <div x-show="open" x-collapse class="mt-2 pl-4 space-y-2 origin-top text-white">
                         <a href="{{ route('orders.download.pdf') }}"
-                            class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Download Semua Transaksi</a>
+                            class="block text-white no-underline hover:bg-yellow-500 hover:text-gray-700 transition-colors rounded-md px-2 py-1">Download
+                            Semua Transaksi</a>
                     </div>
                 </div>
             </div>

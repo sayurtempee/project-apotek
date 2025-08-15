@@ -109,9 +109,11 @@
                             <div class="flex flex-col items-center gap-2">
 
                                 {{-- Edit --}}
-                                <a href="{{ route('obat.edit', $obat) }}" class="text-blue-600 hover:underline">
-                                    Edit
-                                </a>
+                                @if (Auth::user()->role === 'admin')
+                                    <a href="{{ route('obat.edit', $obat) }}" class="text-blue-600 hover:underline">
+                                        Edit
+                                    </a>
+                                @endif
 
                                 {{-- Detail: buka modal --}}
                                 <button type="button" class="text-green-600 hover:underline"
@@ -120,33 +122,36 @@
                                 </button>
 
                                 {{-- Tambah ke keranjang --}}
-                                <form action="{{ route('cart.scan') }}" method="POST" class="inline add-to-cart-form">
-                                    @csrf
-                                    <input type="hidden" name="barcode" value="{{ $obat->kode }}">
-                                    <button type="submit" @if ($obat->stok == 0 || $obat->is_expired) disabled @endif
-                                        class="text-sm {{ $obat->stok == 0 || $obat->is_expired ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:underline' }}"
-                                        title="{{ $obat->stok == 0 ? 'Stok habis' : ($obat->is_expired ? 'Obat kadaluarsa' : 'Tambah ke keranjang') }}">
-                                        + Keranjang
-                                    </button>
-                                </form>
-
-                                {{-- Hapus --}}
-                                @if ($obat->stok > 0)
-                                    <button class="w-28 text-gray-400 cursor-not-allowed text-sm"
-                                        title="Tidak bisa dihapus: stok masih ada ({{ $obat->stok }})" disabled>
-                                        Hapus
-                                    </button>
-                                @else
-                                    <form action="{{ route('obat.destroy', $obat) }}" method="POST"
-                                        onsubmit="return confirm('Yakin ingin menghapus?')">
+                                @if (Auth::user()->role === 'kasir')
+                                    <form action="{{ route('cart.scan') }}" method="POST" class="inline add-to-cart-form">
                                         @csrf
-                                        @method('DELETE')
-                                        <button class="w-28 text-red-600 hover:underline text-sm">
-                                            Hapus
+                                        <input type="hidden" name="barcode" value="{{ $obat->kode }}">
+                                        <button type="submit" @if ($obat->stok == 0 || $obat->is_expired) disabled @endif
+                                            class="text-sm {{ $obat->stok == 0 || $obat->is_expired ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:underline' }}"
+                                            title="{{ $obat->stok == 0 ? 'Stok habis' : ($obat->is_expired ? 'Obat kadaluarsa' : 'Tambah ke keranjang') }}">
+                                            + Keranjang
                                         </button>
                                     </form>
                                 @endif
 
+                                {{-- Hapus --}}
+                                @if (Auth::user()->role === 'admin')
+                                    @if ($obat->stok > 0)
+                                        <button class="w-28 text-gray-400 cursor-not-allowed text-sm"
+                                            title="Tidak bisa dihapus: stok masih ada ({{ $obat->stok }})" disabled>
+                                            Hapus
+                                        </button>
+                                    @else
+                                        <form action="{{ route('obat.destroy', $obat) }}" method="POST"
+                                            onsubmit="return confirm('Yakin ingin menghapus?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="w-28 text-red-600 hover:underline text-sm">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -186,9 +191,9 @@
                                 <button onclick="closeDetailModal({{ $obat->id }})"
                                     class="px-4 py-2 bg-gray-200 rounded">Tutup</button>
                                 @if ($obat->stok > 0)
-                                    <form action="#" method="POST">
+                                    <form id="add-to-cart-modal-{{ $obat->id }}">
                                         @csrf
-                                        <input type="hidden" name="kode" value="{{ $obat->kode }}">
+                                        <input type="hidden" name="barcode" value="{{ $obat->kode }}">
                                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">+
                                             Keranjang</button>
                                     </form>
@@ -484,6 +489,33 @@
                     } catch (error) {
                         alert('Terjadi kesalahan koneksi');
                     }
+                });
+            });
+
+            document.querySelectorAll('[id^="add-to-cart-modal-"]').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    let formData = new FormData(this);
+
+                    fetch("{{ route('cart.scan') }}", {
+                            method: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": formData.get('_token'),
+                                "Accept": "application/json"
+                            },
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            // Menampilkan pesan di UI
+                            alert(
+                                `${data.message}\nProduk: ${data.product_name}\nKadaluarsa: ${data.expires_at}`);
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert("Gagal menambahkan ke keranjang.");
+                        });
                 });
             });
         </script>
