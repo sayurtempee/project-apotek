@@ -29,10 +29,15 @@
                         class="border w-full p-3 rounded focus:outline-none focus:ring-2 focus:ring-green-700" required
                         autofocus>
                 </div>
-                <div class="mb-6">
+                <div class="mb-6 relative">
                     <label class="block mb-2 font-semibold">Password</label>
-                    <input type="password" name="password"
-                        class="border w-full p-3 rounded focus:outline-none focus:ring-2 focus:ring-green-700" required>
+                    <input id="password" type="password" name="password"
+                        class="border w-full p-3 rounded focus:outline-none focus:ring-2 focus:ring-green-700 pr-10"
+                        required>
+                    <button type="button" id="togglePassword"
+                        class="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700">
+                        👁️
+                    </button>
                 </div>
                 <button type="submit"
                     class="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded w-full font-semibold text-lg transition">
@@ -48,4 +53,17 @@
             <p class="text-base text-center">Pastikan data Anda aman dan rahasia.</p>
         </div>
     </div>
+
+    <script>
+        const password = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+
+        togglePassword.addEventListener('click', () => {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+
+            // Ubah icon mata
+            togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+    </script>
 @endsection
