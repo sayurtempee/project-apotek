@@ -18,6 +18,10 @@ Route::get('/', function () {
 // Disini untuk Tampilan nya
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Route untuk ambil data chart sesuai filter
+    Route::get('/dashboard/data', [DashboardController::class, 'getChartData'])->name('dashboard.data');
+
     Route::get('/dashboard/data/{year}', [DashboardController::class, 'getChartDataByYear']);
     Route::resource('obat', ObatController::class);
     Route::resource('category', CategoryController::class);
