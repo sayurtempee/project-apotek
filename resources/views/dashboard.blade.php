@@ -21,24 +21,17 @@
     {{-- Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         @if (Auth::user()->role === 'admin')
-            {{-- Admin Card --}}
             <x-dashboard-card title="Admin" :count="$adminCount" icon="fa-user-shield" bg="blue" />
-            {{-- Kasir Card --}}
             <x-dashboard-card title="Kasir" :count="$kasirCount" icon="fa-cash-register" bg="green" />
-            {{-- Total Penjualan --}}
             <x-dashboard-card title="Total Penjualan" :count="number_format($totalSales, 0, ',', '.')" icon="fa-sack-dollar" bg="purple" />
-            {{-- Kategori Obat --}}
             <x-dashboard-card title="Kategori Obat" :count="$kategoriCount" icon="fa-tags" bg="indigo" />
         @endif
 
         @if (Auth::user()->role === 'kasir')
-            {{-- Member --}}
             <x-dashboard-card title="Member" :count="$memberCount" icon="fa-users" bg="yellow" />
         @endif
 
-        {{-- Penjualan Hari Ini --}}
         <x-dashboard-card title="Penjualan Hari Ini" :count="number_format($totalSalesToday, 0, ',', '.')" icon="fa-calendar-day" bg="green" />
-        {{-- Obat --}}
         <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-pills" bg="red" />
     </div>
 
@@ -62,11 +55,11 @@
                 </div>
                 <div id="dynamic-dropdown"></div>
                 <div class="flex gap-3">
-                    <a href="#" id="pdf-month"
+                    <a href="{{ route('dashboard.export.pdf.month') }}"
                         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Unduh PDF Bulan Ini</a>
-                    <a href="#" id="pdf-year"
+                    <a href="{{ route('dashboard.export.pdf.year') }}"
                         class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Unduh PDF Tahun Ini</a>
-                    <a href="{{ route('orders.download.pdf') }}" target="_blank"
+                    <a href="{{ route('dashboard.export.pdf.all') }}"
                         class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Unduh Seluruh PDF</a>
                 </div>
             </div>
@@ -90,18 +83,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             const filterType = document.getElementById('filter-type');
             const dynamicDropdown = document.getElementById('dynamic-dropdown');
+            let salesChart, transaksiChart;
 
             function renderDropdown(type) {
-                const currentYear = new Date().getFullYear();
                 let html = '';
-
                 if (type === 'day') {
-                    html = `<div class="relative">
+                    html = `<div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Tanggal</label>
                         <input type="date" id="day-select" class="border rounded-md px-4 py-2">
                     </div>`;
                 } else if (type === 'month') {
-                    html = `<div class="relative">
+                    html = `<div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Bulan</label>
                         <select id="month-select" class="border rounded-md px-4 py-2">
                             ${[...Array(12).keys()].map(m => `<option value="${m+1}">${new Date(0,m).toLocaleString('id-ID',{month:'long'})}</option>`).join('')}
@@ -109,38 +101,22 @@
                     </div>`;
                 } else if (type === 'year') {
                     let years = @json($years);
-                    html = `<div class="relative">
+                    html = `<div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Tahun</label>
                         <select id="year-select" class="border rounded-md px-4 py-2">
                             ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
                         </select>
                     </div>`;
-                } else if (type === 'all') {
-                    html = '';
                 }
-
                 dynamicDropdown.innerHTML = html;
             }
 
-            filterType.addEventListener('change', function() {
-                renderDropdown(this.value);
-            });
-
-            // Event listener untuk update chart saat pilih tahun
-            document.addEventListener('change', function(e) {
-                if (e.target && e.target.id === 'year-select') {
-                    let selectedYear = e.target.value;
-                    fetch(`/dashboard/data/${selectedYear}`)
-                        .then(res => res.json())
-                        .then(data => renderCharts(data.labels, data.totalPenjualan, data.jumlahTransaksi));
-                }
-            });
-
-            // Inisialisasi dropdown default
-            renderDropdown(filterType.value);
-
-            // Chart.js
-            let salesChart, transaksiChart;
+            function fetchChartData(params = {}) {
+                let query = new URLSearchParams(params).toString();
+                fetch(`{{ route('dashboard.data') }}?${query}`)
+                    .then(res => res.json())
+                    .then(data => renderCharts(data.labels, data.totalPenjualan, data.jumlahTransaksi));
+            }
 
             function renderCharts(labels, totalPenjualan, jumlahTransaksi) {
                 const salesCtx = document.getElementById('salesChart').getContext('2d');
@@ -157,9 +133,6 @@
                             fill: true,
                             tension: 0.4
                         }]
-                    },
-                    options: {
-                        responsive: true
                     }
                 });
 
@@ -176,18 +149,53 @@
                             borderColor: '#22C55E',
                             borderWidth: 1
                         }]
-                    },
-                    options: {
-                        responsive: true
                     }
                 });
             }
 
-            // Inisialisasi chart awal (bulan)
-            const monthLabels = @json($salesPerYear->pluck('month')->map(fn($m) => \Carbon\Carbon::create()->month($m)->locale('id')->monthName));
-            const totalPenjualan = @json($salesPerYear->pluck('total'));
-            const jumlahTransaksi = @json($transactionsPerYear->pluck('count'));
-            renderCharts(monthLabels, totalPenjualan, jumlahTransaksi);
+            filterType.addEventListener('change', function() {
+                renderDropdown(this.value);
+                attachDropdownListener(this.value);
+            });
+
+            function attachDropdownListener(type) {
+                if (type === 'day') {
+                    document.getElementById('day-select').addEventListener('change', function() {
+                        fetchChartData({
+                            filter: 'day',
+                            date: this.value
+                        });
+                    });
+                } else if (type === 'month') {
+                    document.getElementById('month-select').addEventListener('change', function() {
+                        fetchChartData({
+                            filter: 'month',
+                            year: new Date().getFullYear(),
+                            month: this.value
+                        });
+                    });
+                } else if (type === 'year') {
+                    document.getElementById('year-select').addEventListener('change', function() {
+                        fetchChartData({
+                            filter: 'year',
+                            year: this.value
+                        });
+                    });
+                } else {
+                    fetchChartData({
+                        filter: 'all'
+                    });
+                }
+            }
+
+            // Inisialisasi awal
+            renderDropdown(filterType.value);
+            attachDropdownListener(filterType.value);
+            fetchChartData({
+                filter: 'month',
+                year: new Date().getFullYear(),
+                month: new Date().getMonth() + 1
+            });
         });
     </script>
 @endsection
