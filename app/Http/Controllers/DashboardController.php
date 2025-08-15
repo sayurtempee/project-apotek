@@ -10,7 +10,10 @@ use App\Models\Member;
 use App\Models\Category;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class DashboardController extends Controller
 {
@@ -72,86 +75,143 @@ class DashboardController extends Controller
 
     public function exportPdfMonth()
     {
-        $currentMonth = Carbon::now()->month;
-        $currentYear = Carbon::now()->year;
+        $month = Carbon::now()->month;
+        $year = Carbon::now()->year;
 
-        $sales = Order::selectRaw('DAY(created_at) as label, SUM(total) as total')
-            ->whereMonth('created_at', $currentMonth)
-            ->whereYear('created_at', $currentYear)
-            ->groupBy('label')
-            ->orderBy('label')
+        $items = DB::table('order_items')
+            ->select(
+                'product_name',
+                DB::raw('SUM(quantity) as total_qty'),
+                DB::raw('SUM(line_total) as total_sales')
+            )
+            ->whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->groupBy('product_name')
+            ->orderBy('product_name', 'asc')
             ->get();
 
-        $pdf = Pdf::loadView('pdf.template', [
-            'title' => 'Laporan Penjualan Bulan Ini',
-            'column1' => 'Hari',
-            'sales' => $sales
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download('laporan-bulan-ini.pdf');
+        return $this->generatePdf($items, "Rekap Penjualan Bulan " . Carbon::now()->translatedFormat('F Y'));
     }
 
     public function exportPdfYear()
     {
-        $currentYear = Carbon::now()->year;
+        $year = Carbon::now()->year;
 
-        $sales = Order::selectRaw('MONTH(created_at) as label, SUM(total) as total')
-            ->whereYear('created_at', $currentYear)
-            ->groupBy('label')
-            ->orderBy('label')
+        $items = DB::table('order_items')
+            ->select(
+                'product_name',
+                DB::raw('SUM(quantity) as total_qty'),
+                DB::raw('SUM(line_total) as total_sales')
+            )
+            ->whereYear('created_at', $year)
+            ->groupBy('product_name')
+            ->orderBy('product_name', 'asc')
             ->get();
 
-        // Konversi angka bulan ke nama bulan
-        foreach ($sales as $s) {
-            $s->label = Carbon::create()->month($s->label)->format('F');
-        }
-
-        $pdf = Pdf::loadView('pdf.template', [
-            'title' => 'Laporan Penjualan Tahun Ini',
-            'column1' => 'Bulan',
-            'sales' => $sales
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download('laporan-tahun-ini.pdf');
+        return $this->generatePdf($items, "Rekap Penjualan Tahun " . $year);
     }
 
     public function exportPdfAll()
     {
-        $sales = Order::selectRaw('DATE(created_at) as label, SUM(total) as total')
-            ->groupBy('label')
-            ->orderBy('label')
+        $items = DB::table('order_items')
+            ->select(
+                'product_name',
+                DB::raw('SUM(quantity) as total_qty'),
+                DB::raw('SUM(line_total) as total_sales')
+            )
+            ->groupBy('product_name')
+            ->orderBy('product_name', 'asc')
             ->get();
 
-        // Format tanggal
-        foreach ($sales as $s) {
-            $s->label = Carbon::parse($s->label)->format('d M Y');
-        }
-
-        $pdf = Pdf::loadView('pdf.template', [
-            'title' => 'Seluruh Penjualan',
-            'column1' => 'Tanggal',
-            'sales' => $sales
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download('laporan-seluruh-penjualan.pdf');
+        return $this->generatePdf($items, "Rekap Penjualan - Semua Data");
     }
 
-    public function getChartDataByYear($year)
+    private function generatePdf($items, $title)
     {
-        $sales = Order::selectRaw('MONTH(created_at) as month, SUM(total) as total')
-            ->whereYear('created_at', $year)
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+        $total = $items->sum('total_sales');
 
-        $transactions = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->whereYear('created_at', $year)
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+
+        $html = view('pdf.rekap-obat', compact('items', 'title', 'total'))->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->stream(str_replace(' ', '_', $title) . '.pdf');
+    }
+
+    public function getChartData(Request $request)
+    {
+        $filter = $request->query('filter', 'month');
+        $year = $request->query('year', now()->year);
+        $month = $request->query('month', now()->month);
+        $date = $request->query('date', now()->toDateString());
+
+        if ($filter === 'day') {
+            $sales = Order::selectRaw('HOUR(created_at) as label, SUM(total) as total')
+                ->whereDate('created_at', $date)
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $transactions = Order::selectRaw('HOUR(created_at) as label, COUNT(*) as count')
+                ->whereDate('created_at', $date)
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $labels = $sales->pluck('label')->map(fn($h) => $h . ':00');
+        } elseif ($filter === 'month') {
+            $sales = Order::selectRaw('DAY(created_at) as label, SUM(total) as total')
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $transactions = Order::selectRaw('DAY(created_at) as label, COUNT(*) as count')
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $labels = $sales->pluck('label');
+        } elseif ($filter === 'year') {
+            $sales = Order::selectRaw('MONTH(created_at) as label, SUM(total) as total')
+                ->whereYear('created_at', $year)
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $transactions = Order::selectRaw('MONTH(created_at) as label, COUNT(*) as count')
+                ->whereYear('created_at', $year)
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $labels = $sales->pluck('label')->map(fn($m) => Carbon::create()->month($m)->locale('id')->monthName);
+        } else { // all
+            $sales = Order::selectRaw('DATE(created_at) as label, SUM(total) as total')
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $transactions = Order::selectRaw('DATE(created_at) as label, COUNT(*) as count')
+                ->groupBy('label')
+                ->orderBy('label')
+                ->get();
+
+            $labels = $sales->pluck('label')->map(fn($d) => Carbon::parse($d)->format('d M Y'));
+        }
 
         return response()->json([
-            'labels' => $sales->pluck('month')->map(fn($m) => \Carbon\Carbon::create()->month($m)->locale('id')->monthName),
+            'labels' => $labels,
             'totalPenjualan' => $sales->pluck('total'),
             'jumlahTransaksi' => $transactions->pluck('count')
         ]);
