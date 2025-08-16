@@ -35,6 +35,15 @@ class ObatController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
+        // 🔎 FILTER SEARCH (opsional, via query param search)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('kode', 'like', "%{$search}%");
+            });
+        }
+
         $obats = $query->orderByRaw(
             'CASE WHEN kadaluarsa IS NOT NULL AND kadaluarsa < ? THEN 1 ELSE 0 END',
             [$today]
@@ -53,6 +62,7 @@ class ObatController extends Controller
             'project'    => 'Apotek Mii',
         ]);
     }
+
 
     /**
      * Show the form for creating a new resource.
