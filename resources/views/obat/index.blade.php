@@ -134,10 +134,12 @@
                                 @endif
 
                                 {{-- Detail: buka modal --}}
-                                <button type="button" class="text-green-600 hover:underline"
-                                    onclick="openDetailModal({{ $obat->id }})">
-                                    Detail
-                                </button>
+                                @if (Auth::user()->role === 'kasir')
+                                    <button type="button" class="text-green-600 hover:underline"
+                                        onclick="openDetailModal({{ $obat->id }})">
+                                        Detail
+                                    </button>
+                                @endif
 
                                 {{-- Tambah ke keranjang --}}
                                 @if (Auth::user()->role === 'kasir')
