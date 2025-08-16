@@ -22,6 +22,7 @@ class Obat extends Model
         'category_id',
         'foto',
         'kadaluarsa',
+        'unit_id'
     ];
 
     protected $casts = [
@@ -42,5 +43,10 @@ class Obat extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function unit()
+    {
+        return $this->belongsTo(Unit::class);
     }
 }
