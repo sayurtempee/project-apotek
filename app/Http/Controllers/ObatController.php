@@ -16,13 +16,12 @@ class ObatController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $today = Carbon::today();
-
         $query = Obat::query();
 
-        // Jika role kasir → filter agar hanya tampil obat yang stok > 0 dan belum kadaluarsa
+        // FILTER ROLE KASIR → hanya tampil stok > 0 & belum kadaluarsa
         if (Auth::user()->role === 'kasir') {
             $query->where('stok', '>', 0)
                 ->where(function ($q) use ($today) {
@@ -31,7 +30,11 @@ class ObatController extends Controller
                 });
         }
 
-        // Urutan: expired di bawah, stok kosong di bawah, lalu by created_at
+        // FILTER KATEGORI (opsional, via query param category_id)
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
         $obats = $query->orderByRaw(
             'CASE WHEN kadaluarsa IS NOT NULL AND kadaluarsa < ? THEN 1 ELSE 0 END',
             [$today]
@@ -40,10 +43,14 @@ class ObatController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
+        // Ambil kategori
+        $categories = \App\Models\Category::orderBy('nama')->get();
+
         return view('obat.index', [
-            'obats'   => $obats,
-            'title'   => 'Daftar Obat',
-            'project' => 'Apotek Mii',
+            'obats'      => $obats,
+            'categories' => $categories,
+            'title'      => 'Daftar Obat',
+            'project'    => 'Apotek Mii',
         ]);
     }
 
