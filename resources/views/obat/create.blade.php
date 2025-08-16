@@ -68,6 +68,20 @@
                 required>
         </div>
         <div class="mb-3">
+            <label class="block font-medium text-black">Satuan / Unit</label>
+            <select name="unit_id" class="w-full border p-2 rounded text-black">
+                <option value="">Pilih Satuan</option>
+                @foreach ($units as $unit)
+                    <option value="{{ $unit->id }}" {{ old('unit_id') == $unit->id ? 'selected' : '' }}>
+                        {{ $unit->name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('unit_id')
+                <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+        <div class="mb-3">
             <label class="block font-medium text-black">Deskripsi</label>
             <textarea name="deskripsi" class="w-full border p-2 rounded text-black" rows="4">{{ old('deskripsi') }}</textarea>
         </div>
