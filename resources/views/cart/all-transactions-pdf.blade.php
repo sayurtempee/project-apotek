@@ -90,6 +90,16 @@
                         <td>- Rp {{ number_format($discountAmount, 0, ',', '.') }}</td>
                     </tr>
                 @endif
+
+                <tr class="total-row">
+                    <td colspan="3" style="text-align:right;">Jumlah Bayar</td>
+                    <td>Rp {{ number_format($order->paid_amount, 0, ',', '.') }}</td>
+                </tr>
+
+                <tr class="total-row">
+                    <td colspan="3" style="text-align:right;">Kembalian</td>
+                    <td>Rp {{ number_format($order->change, 0, ',', '.') }}</td>
+                </tr>
             </tbody>
         </table>
         <br>

@@ -1,6 +1,8 @@
 @extends('components.app')
 
 @section('content')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <div class="container py-4">
         <a href="{{ route('obat.index') }}" class="btn btn-link text-decoration-none mb-3">
             <i class="bi bi-arrow-left"></i> Kembali
@@ -12,9 +14,7 @@
                 <div class="card shadow-sm border-0 h-100">
                     <div
                         class="card-header bg-gradient bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja
-                        </h5>
+                        <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja</h5>
                         @if ($cart->expires_at && $cart->items->count() > 0)
                             <span class="badge bg-warning text-dark">
                                 Hapus item bisa setelah: <span id="countdown"></span>
@@ -24,7 +24,7 @@
                     <div class="card-body p-0">
                         @forelse ($cart->items as $item)
                             <div
-                                class="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 border-bottom">
+                                class="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 border-bottom cart-row">
                                 <div class="d-flex align-items-center gap-3">
                                     <input type="checkbox" class="form-check-input check-item" data-id="{{ $item->id }}"
                                         {{ $item->is_checked ? 'checked' : '' }}>
@@ -36,24 +36,20 @@
                                 </div>
                                 <div class="mt-3 mt-md-0 d-flex align-items-center gap-2">
                                     <form action="{{ route('cart.item.update', $item->id) }}" method="POST"
-                                        class="d-flex align-items-center gap-2">
-                                        @csrf
-                                        @method('PUT')
+                                        class="d-flex align-items-center gap-2 quantity-form">
+                                        @csrf @method('PUT')
                                         <input type="number" name="quantity" value="{{ old('quantity', $item->quantity) }}"
                                             min="1" max="{{ $item->obat->stok }}"
                                             class="form-control form-control-sm text-center" style="width: 70px">
                                         <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
                                     </form>
-                                    <span class="fw-bold text-primary">Rp
+                                    <span class="fw-bold text-primary line-total">Rp
                                         {{ number_format($item->line_total, 0, ',', '.') }}</span>
                                     <form action="{{ route('cart.remove', $item->id) }}" method="POST"
                                         onsubmit="return confirm('Hapus item ini?')">
-                                        @csrf
-                                        @method('DELETE')
+                                        @csrf @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger delete-btn"
-                                            {{ !$cart->isExpired() ? 'disabled' : '' }}>
-                                            Hapus
-                                        </button>
+                                            {{ !$cart->isExpired() ? 'disabled' : '' }}>Hapus</button>
                                     </form>
                                 </div>
                             </div>
@@ -120,24 +116,63 @@
     </div>
 
     <script>
-        // Hitung kembalian otomatis
-        document.getElementById('paid_amount').addEventListener('input', function() {
-            const total = parseFloat(document.getElementById('total').value) || 0;
-            const paid = parseFloat(this.value) || 0;
-            const change = paid - total;
-            document.getElementById('change').value = change > 0 ? change : 0;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const totalInput = document.getElementById('total');
+        const paidInput = document.getElementById('paid_amount');
+        const changeInput = document.getElementById('change');
+        let memberPoints = 0;
+        let usePoints = false;
 
-            // Reset validasi saat input berubah
-            this.classList.remove('is-invalid');
-            document.getElementById('paid-error').style.display = 'none';
+        // Hitung total & kembalian
+        function updateTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('.check-item').forEach(cb => {
+                if (cb.checked) {
+                    const row = cb.closest('.cart-row');
+                    const lineTotalEl = row.querySelector('.line-total');
+                    const lineTotal = parseFloat(lineTotalEl.textContent.replace(/\D/g, '')) || 0;
+                    subtotal += lineTotal;
+                }
+            });
+            let total = subtotal;
+            if (usePoints && memberPoints > 0) {
+                total -= memberPoints * 100;
+                if (total < 0) total = 0;
+            }
+            totalInput.value = total.toFixed(0);
+            const paid = parseFloat(paidInput.value) || 0;
+            changeInput.value = (paid - total > 0 ? (paid - total).toFixed(0) : 0);
+        }
+        updateTotal();
+        paidInput.addEventListener('input', updateTotal);
+
+        // Toggle check item
+        document.querySelectorAll('.check-item').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const id = this.dataset.id;
+                fetch(`/cart/item/${id}/toggle-check`, {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            is_checked: this.checked ? 1 : 0
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) alert(data.message || 'Gagal menyimpan status ceklis.');
+                        updateTotal();
+                    })
+                    .catch(() => alert('Kesalahan koneksi.'));
+            });
         });
 
-        // Pencarian member dengan AJAX saat tombol cari ditekan
-        document.getElementById('btn-search-member').addEventListener('click', function() {
-            const phoneInput = document.getElementById('phone');
-            const phone = phoneInput.value.trim();
+        // Cari member & pakai poin
+        document.getElementById('btn-search-member').addEventListener('click', () => {
+            const phone = document.getElementById('phone').value.trim();
             const resultDiv = document.getElementById('member-result');
-
             if (!phone) {
                 alert('Masukkan nomor HP!');
                 return;
@@ -148,63 +183,81 @@
                 .then(data => {
                     if (data.status === 'found') {
                         if (!data.is_active) {
-                            resultDiv.innerHTML = `
-                            <div class="alert alert-warning">
-                                Member tidak aktif.<br>
-                                Untuk mengaktifkan, silahkan lakukan transaksi minimal Rp 50.000.
-                            </div>
-                        `;
+                            resultDiv.innerHTML =
+                                `<div class="alert alert-warning">Member tidak aktif. Transaksi minimal Rp 50.000 untuk aktivasi.</div>`;
                             document.getElementById('input-pakai_diskon').value = '0';
+                            usePoints = false;
+                            memberPoints = 0;
+                            updateTotal();
                             return;
                         }
-
-                        resultDiv.innerHTML = `
-                        <div class="alert alert-success">
-                            <strong>Member: ${data.nama}</strong><br>
-                            Poin: ${data.poin}
-                        </div>
-                        <button type="button" class="btn btn-success w-100" id="btn-use-points">
-                            Gunakan Member
-                        </button>
-                    `;
-
-                        // Pasang event listener tombol Gunakan Poin Diskon
-                        document.getElementById('btn-use-points').addEventListener('click', function() {
-                            const totalInput = document.getElementById('total');
-                            const poin = parseFloat(data.poin) || 0;
-                            const currentTotal = parseFloat(totalInput.value) || 0;
-                            let newTotal = currentTotal - (poin * 100);
-                            totalInput.value = newTotal > 0 ? newTotal.toFixed(0) : 0;
-
-                            // Set flag diskon
-                            document.getElementById('input-pakai_diskon').value = '1';
-
-                            alert('Poin diskon berhasil diterapkan!');
-                        });
-
+                        resultDiv.innerHTML =
+                            `<div class="alert alert-success"><strong>Member: ${data.nama}</strong><br>Poin: ${data.poin}</div>
+            <button type="button" class="btn btn-success w-100" id="btn-use-points" data-points="${data.poin}">Gunakan Poin</button>`;
                     } else {
                         resultDiv.innerHTML = `<div class="alert alert-danger">Member tidak ditemukan</div>`;
-                        // Reset flag diskon
                         document.getElementById('input-pakai_diskon').value = '0';
+                        usePoints = false;
+                        memberPoints = 0;
+                        updateTotal();
                     }
-                })
-                .catch(() => {
-                    alert('Terjadi kesalahan saat mencari member.');
-                });
+                }).catch(() => alert('Kesalahan saat mencari member'));
         });
 
-        // Validasi jumlah bayar sebelum submit form checkout
-        document.getElementById('checkout-form').addEventListener('submit', function(event) {
-            const total = parseFloat(document.getElementById('total').value) || 0;
-            const paidAmount = parseFloat(document.getElementById('paid_amount').value) || 0;
+        // Gunakan poin
+        document.addEventListener('click', e => {
+            if (e.target && e.target.id === 'btn-use-points') {
+                usePoints = true;
+                memberPoints = parseFloat(e.target.dataset.points) || 0;
+                document.getElementById('input-pakai_diskon').value = '1';
+                updateTotal();
+                alert('Poin diskon diterapkan!');
+            }
+        });
 
-            if (paidAmount < total) {
-                event.preventDefault(); // cegah form submit
-                const paidInput = document.getElementById('paid_amount');
+        // Validasi bayar sebelum submit
+        document.getElementById('checkout-form').addEventListener('submit', e => {
+            const total = parseFloat(totalInput.value) || 0;
+            const paid = parseFloat(paidInput.value) || 0;
+            if (paid < total) {
+                e.preventDefault();
                 paidInput.classList.add('is-invalid');
                 document.getElementById('paid-error').style.display = 'block';
                 paidInput.focus();
             }
+        });
+
+        // Update quantity via AJAX
+        document.querySelectorAll('.quantity-form').forEach(form => {
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                const data = new FormData(form);
+                const url = form.action;
+
+                fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: data
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            const row = form.closest('.cart-row');
+                            row.querySelector('.line-total').textContent = 'Rp ' + Number(res
+                                .line_total).toLocaleString('id', {
+                                minimumFractionDigits: 0
+                            });
+                            totalInput.value = res.cart_total.toFixed(0);
+                            const paid = parseFloat(paidInput.value) || 0;
+                            changeInput.value = (paid - res.cart_total > 0 ? (paid - res.cart_total)
+                                .toFixed(0) : 0);
+                        } else {
+                            alert(res.message || 'Gagal update quantity.');
+                        }
+                    }).catch(() => alert('Kesalahan koneksi.'));
+            });
         });
 
         // Countdown hapus item
@@ -212,57 +265,27 @@
             const expiryTime = new Date("{{ $cart->expires_at->toIso8601String() }}").getTime();
             const countdownEl = document.getElementById('countdown');
             const deleteBtns = document.querySelectorAll('.delete-btn');
-
-            // Saat awal load, disable tombol hapus
             deleteBtns.forEach(btn => btn.disabled = true);
 
             const timer = setInterval(() => {
                 const now = new Date().getTime();
                 const distance = expiryTime - now;
-
                 if (distance <= 0) {
                     clearInterval(timer);
                     countdownEl.textContent = "Waktu habis, item otomatis terhapus.";
-
                     fetch("{{ route('cart.clear-expired', $cart->id) }}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    }).then(() => location.reload()); // reload halaman agar item hilang
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            }
+                        })
+                        .then(() => location.reload());
                 } else {
                     const minutes = Math.floor(distance / 1000 / 60);
                     const seconds = Math.floor((distance / 1000) % 60);
-                    countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2,'0')}`;
                 }
             }, 1000);
         @endif
-
-        document.querySelectorAll('.check-item').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const itemId = this.dataset.id;
-                const isChecked = this.checked ? 1 : 0;
-
-                fetch(`{{ url('/cart/item') }}/${itemId}/toggle-check`, {
-                        method: 'PATCH',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            is_checked: isChecked
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.success) {
-                            alert('Gagal menyimpan status ceklis.');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Terjadi kesalahan koneksi.');
-                    });
-            });
-        });
     </script>
 @endsection

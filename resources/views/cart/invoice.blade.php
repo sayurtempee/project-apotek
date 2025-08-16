@@ -26,7 +26,6 @@
         .header {
             text-align: center;
             margin-bottom: 28px;
-            position: relative;
         }
 
         .header img {
@@ -59,13 +58,6 @@
             margin-top: 0;
             margin-bottom: 10px;
             font-size: 22px;
-            font-weight: 600;
-        }
-
-        h4 {
-            color: #3aafa9;
-            margin: 18px 0 6px 0;
-            font-size: 18px;
             font-weight: 600;
         }
 
@@ -146,10 +138,11 @@
             display: flex;
             gap: 14px;
             margin-bottom: 24px;
+            flex-wrap: wrap;
         }
 
-        .action-buttons button,
-        .action-buttons a {
+        .action-buttons a,
+        .action-buttons button {
             background: linear-gradient(90deg, #3aafa9 60%, #2b7a78 100%);
             color: #fff;
             border: none;
@@ -163,8 +156,8 @@
             transition: background 0.2s, transform 0.2s;
         }
 
-        .action-buttons button:hover,
-        .action-buttons a:hover {
+        .action-buttons a:hover,
+        .action-buttons button:hover {
             background: linear-gradient(90deg, #2b7a78 60%, #3aafa9 100%);
             transform: translateY(-2px) scale(1.03);
         }
@@ -190,12 +183,24 @@
 
 <body>
     <div class="container">
+
         <div class="action-buttons">
             <a href="{{ route('obat.index') }}">&#8592; Kembali</a>
+            <a href="{{ route('order.invoice.download', $order->id) }}" target="_blank">Download PDF</a>
+            @if ($order->member)
+                <form action="{{ route('cart.sendWhatsApp', ['cart' => $order->id]) }}" method="POST" class="inline">
+                    @csrf
+                    <input type="hidden" name="ids"
+                        value="{{ implode(',', $order->items->pluck('id')->toArray()) }}">
+                    <input type="hidden" name="no_telp" value="{{ $order->member->phone }}">
+                    <button type="submit">
+                        <i class="fab fa-whatsapp"></i> Kirim ke WhatsApp
+                    </button>
+                </form>
+            @endif
         </div>
 
         <div class="header">
-            {{-- Logo Apotek, ganti src sesuai logo Anda --}}
             <img src="https://img.icons8.com/fluency/96/000000/pill.png" alt="Logo Apotek" />
             <h2>Apotek Mii</h2>
             <p>Cakung Timur, Jakarta Timur, Gang Bayam No.17, DKI Jakarta</p>
@@ -208,9 +213,7 @@
             <div>
                 <h3>
                     Invoice #{{ $order->id }}
-                    <span class="badge">
-                        {{ $order->status == 'paid' ? 'Lunas' : 'Belum Lunas' }}
-                    </span>
+                    <span class="badge">{{ $order->status == 'paid' ? 'Lunas' : 'Belum Lunas' }}</span>
                 </h3>
             </div>
             <div>
@@ -257,10 +260,24 @@
                         <td>- Rp {{ number_format($discountAmount, 0, ',', '.') }}</td>
                     </tr>
                 @endif
+
+                <tr class="total-row">
+                    <td colspan="3" style="text-align:right; font-weight:600;">
+                        Jumlah Bayar
+                    </td>
+                    <td>Rp {{ number_format($order->paid_amount, 0, ',', '.') }}</td>
+                </tr>
+
+                <tr class="total-row">
+                    <td colspan="3" style="text-align:right; font-weight:600;">
+                        Kembalian
+                    </td>
+                    <td>Rp {{ number_format($order->change, 0, ',', '.') }}</td>
+                </tr>
             </tbody>
         </table>
 
-        @if (isset($order->member) && $order->member)
+        @if ($order->member)
             <div class="member-info">
                 <h4>Data Member</h4>
                 <p>Nama: <strong>{{ $order->member->name }}</strong></p>
@@ -269,23 +286,6 @@
             </div>
         @endif
 
-        <div class="action-buttons" style="margin-top: 32px;">
-            <a href="{{ route('order.invoice.download', $order->id) }}" target="_blank">Download PDF</a>
-            @if (isset($order->member))
-                <form action="{{ route('cart.sendWhatsApp', ['cart' => $order->id]) }}"
-                    method="POST" class="inline">
-                    @csrf
-                    <input type="hidden" name="ids"
-                        value="{{ implode(',', $order->items->pluck('id')->toArray()) }}">
-                    <input type="hidden" name="no_telp" value="{{ $order->member->phone }}">
-                    <button type="submit"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-full
-                    hover:bg-green-700 hover:shadow-lg hover:scale-105 transition-all duration-300">
-                        <i class="fab fa-whatsapp"></i> Kirim ke WhatsApp
-                    </button>
-                </form>
-            @endif
-        </div>
     </div>
 </body>
 
