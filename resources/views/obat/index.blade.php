@@ -136,12 +136,15 @@
 
                                 {{-- Hapus --}}
                                 @if (Auth::user()->role === 'admin')
-                                    @if ($obat->stok > 0)
+                                    @if ($obat->stok > 0 && $obat->kadaluarsa >= now()->toDateString())
+                                        {{-- Tidak bisa hapus karena stok masih ada dan belum kadaluarsa --}}
                                         <button class="w-28 text-gray-400 cursor-not-allowed text-sm"
-                                            title="Tidak bisa dihapus: stok masih ada ({{ $obat->stok }})" disabled>
+                                            title="Tidak bisa dihapus: stok masih ada ({{ $obat->stok }}) & belum kadaluarsa"
+                                            disabled>
                                             Hapus
                                         </button>
                                     @else
+                                        {{-- Bisa hapus karena memenuhi salah satu kondisi --}}
                                         <form action="{{ route('obat.destroy', $obat) }}" method="POST"
                                             onsubmit="return confirm('Yakin ingin menghapus?')">
                                             @csrf
@@ -510,7 +513,8 @@
                         .then(data => {
                             // Menampilkan pesan di UI
                             alert(
-                                `${data.message}\nProduk: ${data.product_name}\nKadaluarsa: ${data.expires_at}`);
+                                `${data.message}\nProduk: ${data.product_name}\nKadaluarsa: ${data.expires_at}`
+                                );
                         })
                         .catch(err => {
                             console.error(err);
