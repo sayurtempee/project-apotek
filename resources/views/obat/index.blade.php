@@ -7,20 +7,80 @@
 @section('content')
     <div x-data="{ open: false, kode: '' }" @keydown.escape.window="open = false">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button id="btn-scan" type="button"
-                    class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
-                    Scan Barcode
-                </button>
-                <div class="relative flex-1">
-                    <input id="barcode-input" type="text" placeholder="Arahkan scanner lalu tunggu otomatis"
-                        class="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        autocomplete="off" aria-label="Input barcode scanner" autofocus />
-                    <div id="scan-feedback" class="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-green-400 hidden">
-                        Terscan!
+            {{-- Filter, Search & Scan (kasir only) --}}
+            @if (Auth::user()->role === 'kasir')
+                <div class="mb-6 space-y-4">
+                    {{-- Baris atas: Scan + Search --}}
+                    <div class="flex flex-col sm:flex-row sm:justify-between gap-4">
+                        {{-- Scan barcode --}}
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button id="btn-scan" type="button"
+                                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <rect x="3" y="7" width="2" height="10" rx="1" fill="currentColor" />
+                                    <rect x="7" y="7" width="2" height="10" rx="1" fill="currentColor" />
+                                    <rect x="11" y="7" width="2" height="10" rx="1" fill="currentColor" />
+                                    <rect x="15" y="7" width="2" height="10" rx="1" fill="currentColor" />
+                                    <rect x="19" y="7" width="2" height="10" rx="1" fill="currentColor" />
+                                </svg>
+                                Scan Barcode
+                            </button>
+                            <div class="relative flex-1">
+                                <input id="barcode-input" type="text" placeholder="Arahkan scanner lalu tunggu otomatis"
+                                    class="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    autocomplete="off" aria-label="Input barcode scanner" autofocus />
+                                <div id="scan-feedback"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-green-500 font-semibold bg-green-100 px-2 py-1 rounded shadow hidden">
+                                    Terscan!
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Search + Dropdown --}}
+                        <form method="GET" action="{{ route('obat.index') }}"
+                            class="flex flex-wrap gap-2 items-center sm:justify-end">
+                            {{-- Input search --}}
+                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari obat..."
+                                class="border rounded px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-green-600">
+
+                            {{-- Dropdown kategori --}}
+                            <select name="category_id"
+                                class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600">
+                                <option value="">Semua Kategori</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}"
+                                        {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->nama }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            {{-- Tombol cari --}}
+                            <button type="submit"
+                                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                                Cari
+                            </button>
+                        </form>
+                    </div>
+
+                    {{-- Baris bawah: kategori cepat --}}
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('obat.index') }}"
+                            class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white' }}">
+                            Semua
+                        </a>
+                        @foreach ($categories as $category)
+                            <a href="{{ route('obat.index', ['category_id' => $category->id]) }}"
+                                class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') == $category->id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                <img src="{{ asset('storage/' . $category->foto) }}" alt="{{ $category->nama }}"
+                                    class="w-5 h-5 object-contain rounded-full border border-gray-300">
+                                {{ $category->nama }}
+                            </a>
+                        @endforeach
                     </div>
                 </div>
-            </div>
+            @endif
 
             @if (Auth::user()->role === 'admin')
                 <div class="flex gap-2">
@@ -28,24 +88,6 @@
                 </div>
             @endif
         </div>
-
-        {{-- Filter kategori (kasir only) --}}
-        @if (Auth::user()->role === 'kasir')
-            <div class="mb-4 flex flex-wrap gap-2">
-                <a href="{{ route('obat.index') }}"
-                    class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white' }}">
-                    Semua
-                </a>
-                @foreach ($categories as $category)
-                    <a href="{{ route('obat.index', ['category_id' => $category->id]) }}"
-                        class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') == $category->id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
-                        <img src="{{ asset('storage/' . $category->foto) }}" alt="{{ $category->nama }}"
-                            class="w-5 h-5 object-contain rounded-full">
-                        {{ $category->nama }}
-                    </a>
-                @endforeach
-            </div>
-        @endif
 
         <div id="alert-container" class="mb-4"></div>
 
@@ -143,7 +185,8 @@
 
                                 {{-- Tambah ke keranjang --}}
                                 @if (Auth::user()->role === 'kasir')
-                                    <form action="{{ route('cart.scan') }}" method="POST" class="inline add-to-cart-form">
+                                    <form action="{{ route('cart.scan') }}" method="POST"
+                                        class="inline add-to-cart-form">
                                         @csrf
                                         <input type="hidden" name="barcode" value="{{ $obat->kode }}">
                                         <button type="submit" @if ($obat->stok == 0 || $obat->is_expired) disabled @endif
