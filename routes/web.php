@@ -40,7 +40,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/export/pdf/all', [DashboardController::class, 'exportPdfAll'])->name('dashboard.export.pdf.all');
     Route::get('/member/search', [MemberController::class, 'search'])->name('member.search');
     Route::delete('/cart/item/{id}/remove', [CartController::class, 'deleteItem'])->name('cart.item.delete');
-    Route::put('/cart/item/{id}', [CartController::class, 'updateItem'])->name('cart.item.update');
+    Route::put('/cart/item/{item}', [CartController::class, 'updateItem'])->name('cart.item.update');
     Route::get('/order/{order}/invoice', [CartController::class, 'invoiceShow'])->name('order.invoice');
     Route::get('/order/{order}/invoice/download', [CartController::class, 'invoiceDownload'])->name('order.invoice.download');
     Route::get('/orders/download/pdf', [CartController::class, 'downloadAllTransactions'])->name('orders.download.pdf');
