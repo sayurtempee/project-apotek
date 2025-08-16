@@ -6,6 +6,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * @property Carbon|null $kadaluarsa
+ */
 class Obat extends Model
 {
     use HasFactory;
@@ -35,7 +38,6 @@ class Obat extends Model
         // kadaluarsa < hari ini => expired
         return $this->kadaluarsa->lt(Carbon::today());
     }
-
 
     public function category()
     {
