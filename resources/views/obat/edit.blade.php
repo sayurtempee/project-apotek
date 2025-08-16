@@ -99,6 +99,17 @@
                 required>
         </div>
         <div class="mb-3">
+            <label class="block mb-1 font-semibold">Satuan</label>
+            <select name="unit_id" class="border w-full p-2 rounded">
+                <option value="">-- Pilih Satuan --</option>
+                @foreach ($units as $unit)
+                    <option value="{{ $unit->id }}" {{ $obat->unit_id == $unit->id ? 'selected' : '' }}>
+                        {{ $unit->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="mb-3">
             <label class="block font-medium">Deskripsi</label>
             <textarea name="deskripsi" class="w-full border p-2 rounded" rows="4">{{ old('deskripsi', $obat->deskripsi) }}</textarea>
         </div>

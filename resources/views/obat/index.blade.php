@@ -103,15 +103,15 @@
         <table class="w-full bg-white rounded shadow overflow-hidden">
             <thead class="bg-gray-100">
                 <tr>
-                    <th class="p-3 text-left">#</th>
-                    <th class="p-3 text-left">Foto Obat</th>
-                    <th class="p-3 text-left">Barcode</th>
-                    <th class="p-3 text-left">Nama</th>
-                    <th class="p-3 text-left">Deskripsi</th>
-                    <th class="p-3 text-left">Kategori</th>
-                    <th class="p-3 text-right">Harga</th>
-                    <th class="p-3 text-right">Stok</th>
-                    <th class="p-3 text-right">Tanggal Kadaluarsa</th>
+                    <th class="p-3 text-center">#</th>
+                    <th class="p-3 text-center">Foto Obat</th>
+                    <th class="p-3 text-center">Barcode</th>
+                    <th class="p-3 text-center">Nama</th>
+                    <th class="p-3 text-center">Deskripsi</th>
+                    <th class="p-3 text-center">Kategori</th>
+                    <th class="p-3 text-center">Harga</th>
+                    <th class="p-3 text-center">Stok</th>
+                    <th class="p-3 text-center">Tanggal Kadaluarsa</th>
                     <th class="p-3 text-center">Aksi</th>
                 </tr>
             </thead>
@@ -138,29 +138,26 @@
                         <td class="p-3">{{ $obat->nama }}</td>
                         <td class="p-3">{{ $obat->deskripsi }}</td>
                         <td class="p-3">{{ $obat->category?->nama ?? '-' }}</td>
-                        <td class="p-3 text-right">Rp. {{ number_format($obat->harga, 0, ',', '.') }}</td>
+                        <td class="p-3 text-center">Rp. {{ number_format($obat->harga, 0, ',', '.') }}</td>
                         <td class="p-3 text-right">
-                            @php $stok = $obat->stok; @endphp
+                            @php
+                                $stok = $obat->stok;
+                                $unit = $obat->unit->name ?? '';
+                                $text = $stok === 0 ? 'Habis' : ($stok <= 5 ? "Sisa: $stok $unit" : "$stok $unit");
+                                $bg =
+                                    $stok === 0
+                                        ? 'bg-red-100 text-red-800'
+                                        : ($stok <= 5
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : '');
+                            @endphp
 
-                            @if ($stok === 0)
-                                <div class="flex justify-center items-center h-8">
-                                    <span
-                                        class="inline-block px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 text-center">
-                                        Habis
-                                    </span>
-                                </div>
-                            @elseif ($stok <= 5)
-                                <div class="flex justify-center items-center h-8">
-                                    <span
-                                        class="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 text-center">
-                                        Sisa: {{ $stok }}
-                                    </span>
-                                </div>
-                            @else
-                                <div class="flex justify-center items-center h-8">
-                                    <span class="text-sm font-medium">{{ $stok }}</span>
-                                </div>
-                            @endif
+                            <div class="flex justify-center items-center h-8">
+                                <span
+                                    class="inline-block px-3 py-1 text-xs font-medium rounded-full {{ $bg }} text-center">
+                                    {{ $text }}
+                                </span>
+                            </div>
                         </td>
                         <td class="p-3 text-center">
                             {{ $obat->kadaluarsa ? $obat->kadaluarsa->translatedFormat('d M Y') : '-' }}
