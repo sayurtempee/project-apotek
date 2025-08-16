@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\Obat;
+use App\Models\Unit;
 use App\Models\Category;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class ObatController extends Controller
     public function index(Request $request)
     {
         $today = Carbon::today();
-        $query = Obat::query();
+        $query = Obat::with('unit'); // langsung eager load unit
 
         // FILTER ROLE KASIR → hanya tampil stok > 0 & belum kadaluarsa
         if (Auth::user()->role === 'kasir') {
@@ -35,7 +36,7 @@ class ObatController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        // 🔎 FILTER SEARCH (opsional, via query param search)
+        // FILTER SEARCH (opsional, via query param search)
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -44,25 +45,24 @@ class ObatController extends Controller
             });
         }
 
+        // Urutan → expired dulu, lalu stok habis, lalu terbaru
         $obats = $query->orderByRaw(
             'CASE WHEN kadaluarsa IS NOT NULL AND kadaluarsa < ? THEN 1 ELSE 0 END',
             [$today]
         )
             ->orderByRaw('CASE WHEN stok = 0 THEN 1 ELSE 0 END')
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString(); // biar filter/search tetap ikut di pagination
 
         // Ambil kategori
         $categories = \App\Models\Category::orderBy('nama')->get();
 
-        return view('obat.index', [
-            'obats'      => $obats,
-            'categories' => $categories,
-            'title'      => 'Daftar Obat',
-            'project'    => 'Apotek Mii',
+        return view('obat.index', compact('obats', 'categories'), [
+            'title'   => 'Daftar Obat',
+            'project' => 'Apotek Mii',
         ]);
     }
-
 
     /**
      * Show the form for creating a new resource.
@@ -70,7 +70,9 @@ class ObatController extends Controller
     public function create()
     {
         $categories = Category::all();
-        return view('obat.create', compact('categories'), [
+        $units = Unit::all();
+
+        return view('obat.create', compact('categories', 'units'), [
             'title' => 'Tambah Obat',
             'project' => 'Apotek Mii',
         ]);
@@ -91,6 +93,7 @@ class ObatController extends Controller
             'kategori_lainnya' => 'nullable|string|max:255',
             'foto'             => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048',
             'kadaluarsa'       => 'nullable|date|after_or_equal:today',
+            'unit_id'          => 'nullable|exists:units,id',
         ]);
 
         if ($validated['kategori_select'] === 'lainnya' && !empty($validated['kategori_lainnya'])) {
@@ -110,6 +113,8 @@ class ObatController extends Controller
             $fotoPath = $request->file('foto')->store('obat', 'public');
         }
 
+        // dd($validated['unit_id']);
+
         Obat::create([
             'nama'        => $validated['nama'],
             'kode'        => $validated['kode'],
@@ -119,6 +124,7 @@ class ObatController extends Controller
             'category_id' => $category?->id,
             'foto'        => $fotoPath,
             'kadaluarsa'  => $validated['kadaluarsa'] ?? null,
+            'unit_id'     => $validated['unit_id'] ?? null,
         ]);
 
         return redirect()->route('obat.index')->with('success', 'Obat berhasil ditambahkan.');
@@ -142,9 +148,9 @@ class ObatController extends Controller
     public function edit(Obat $obat)
     {
         $categories = Category::orderBy('nama')->get();
-        return view('obat.edit', [
-            'obat' => $obat,
-            'categories' => $categories,
+        $units = Unit::all();
+
+        return view('obat.edit', compact('obat', 'categories', 'units'), [
             'title' => 'Edit Obat',
             'project' => 'Apotek Mii',
         ]);
@@ -165,6 +171,7 @@ class ObatController extends Controller
             'kategori_lainnya' => 'nullable|string|max:100',
             'foto'             => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048',
             'kadaluarsa'       => 'nullable|date|after_or_equal:today',
+            'unit_id'          => 'nullable|exists:units,id',
         ]);
 
         if ($validated['kategori_select'] === 'lainnya' && !empty($validated['kategori_lainnya'])) {
@@ -187,6 +194,7 @@ class ObatController extends Controller
             $fotoPath = $obat->foto; // tetap yang lama
         }
 
+
         $obat->update([
             'nama' => $validated['nama'],
             'kode' => $validated['kode'],
@@ -196,6 +204,7 @@ class ObatController extends Controller
             'category_id' => $category?->id,
             'foto' => $fotoPath,
             'kadaluarsa' => $validated['kadaluarsa'] ?? null,
+            'unit_id' => $validated['unit_id'] ?? null,
         ]);
 
         return redirect()->route('obat.index')->with('success', 'Obat berhasil diperbarui.');
