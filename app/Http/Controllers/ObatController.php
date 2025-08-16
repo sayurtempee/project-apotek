@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Obat;
 use App\Models\Category;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class ObatController extends Controller
 {
@@ -18,9 +20,23 @@ class ObatController extends Controller
     {
         $today = Carbon::today();
 
-        $obats = Obat::query()
-            ->orderByRaw('CASE WHEN kadaluarsa IS NOT NULL AND kadaluarsa < ? THEN 1 ELSE 0 END', [$today]) // expired di bawah
-            ->orderByRaw('CASE WHEN stok = 0 THEN 1 ELSE 0 END') // stok kosong di bawah yang belum expired
+        $query = Obat::query();
+
+        // Jika role kasir → filter agar hanya tampil obat yang stok > 0 dan belum kadaluarsa
+        if (Auth::user()->role === 'kasir') {
+            $query->where('stok', '>', 0)
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('kadaluarsa')
+                        ->orWhere('kadaluarsa', '>=', $today);
+                });
+        }
+
+        // Urutan: expired di bawah, stok kosong di bawah, lalu by created_at
+        $obats = $query->orderByRaw(
+            'CASE WHEN kadaluarsa IS NOT NULL AND kadaluarsa < ? THEN 1 ELSE 0 END',
+            [$today]
+        )
+            ->orderByRaw('CASE WHEN stok = 0 THEN 1 ELSE 0 END')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
