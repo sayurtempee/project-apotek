@@ -11,6 +11,13 @@
             </div>
         @else
             @foreach ($transactions as $transaction)
+                @php
+                    $subtotal = $transaction->items->sum('line_total'); // sebelum poin
+                    $discountAmount = $subtotal - $transaction->total; // poin yang dipakai
+                    $discountPercentage = $subtotal > 0 ? ($discountAmount / $subtotal) * 100 : 0;
+                    $change = max(0, $transaction->paid_amount - $transaction->total);
+                @endphp
+
                 <div class="card mb-4 shadow-sm border-0">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <span>
@@ -22,13 +29,8 @@
                             {{ $transaction->created_at->format('d-m-Y H:i') }}
                         </span>
                     </div>
-                    <div class="card-body">
-                        <p class="mb-3 fs-5">
-                            <strong>Total:</strong>
-                            <span class="badge bg-success fs-6">Rp
-                                {{ number_format($transaction->total, 0, ',', '.') }}</span>
-                        </p>
 
+                    <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle">
                                 <thead class="table-light">
@@ -56,13 +58,12 @@
                             </table>
                         </div>
 
-                        @php
-                            $subtotal = $transaction->items->sum('line_total');
-                            $discountAmount = $subtotal - $transaction->total;
-                            $discountPercentage = $subtotal > 0 ? ($discountAmount / $subtotal) * 100 : 0;
-                        @endphp
-
                         <div class="mt-3">
+                            <p>
+                                <strong>Subtotal:</strong>
+                                Rp {{ number_format($subtotal, 0, ',', '.') }}
+                            </p>
+
                             <p>
                                 <strong>Diskon Poin:</strong>
                                 @if ($discountAmount > 0)
@@ -71,6 +72,23 @@
                                 @else
                                     -
                                 @endif
+                            </p>
+
+                            <p class="mb-3 fs-5">
+                                <strong>Total:</strong>
+                                <span class="badge bg-success fs-6">
+                                    Rp {{ number_format($transaction->total, 0, ',', '.') }}
+                                </span>
+                            </p>
+
+                            <p>
+                                <strong>Jumlah Bayar:</strong>
+                                Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}
+                            </p>
+
+                            <p>
+                                <strong>Kembalian:</strong>
+                                Rp {{ number_format($change, 0, ',', '.') }}
                             </p>
                         </div>
 
