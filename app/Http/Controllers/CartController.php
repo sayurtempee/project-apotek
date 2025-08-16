@@ -32,7 +32,7 @@ class CartController extends Controller
         // Atur waktu kadaluarsa jika ada item
         if ($cart->items->count() > 0) {
             if (!$cart->expires_at || $cart->isExpired()) {
-                $cart->expires_at = now()->addMinutes(5);
+                $cart->expires_at = now()->addMinutes(1);
                 $cart->save();
             }
         } else {
@@ -126,7 +126,7 @@ class CartController extends Controller
 
         $cart = $this->getCart();
         if (!$cart->expires_at || $cart->isExpired()) {
-            $cart->expires_at = now()->addMinutes(5);
+            $cart->expires_at = now()->addMinutes(1);
             $cart->save();
         }
 
@@ -195,6 +195,7 @@ class CartController extends Controller
         return back()->with('success', 'Item dihapus.');
     }
 
+    // Update quantity AJAX
     public function updateQuantity(Request $request, CartItem $item)
     {
         $request->validate([
@@ -202,26 +203,45 @@ class CartController extends Controller
         ]);
 
         $cart = $this->getCart();
+
+        // Pastikan item milik cart ini
         if ($item->cart_id !== $cart->id) {
-            abort(403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak.'
+            ], 403);
         }
 
         $newQty = $request->input('quantity');
         $obat = Obat::find($item->obat_id);
         if (!$obat) {
-            return back()->with('error', 'Obat tidak ditemukan.');
-        }
-        if ($newQty > $obat->stok) {
-            return back()->with('error', "Jumlah melebihi stok tersedia ({$obat->stok}).");
+            return response()->json([
+                'success' => false,
+                'message' => 'Obat tidak ditemukan.'
+            ]);
         }
 
+        if ($newQty > $obat->stok) {
+            return response()->json([
+                'success' => false,
+                'message' => "Jumlah melebihi stok tersedia ({$obat->stok})."
+            ]);
+        }
+
+        // Update quantity & line total
         $item->quantity = $newQty;
         $item->line_total = $item->price * $item->quantity;
         $item->save();
 
+        // Hitung ulang total cart (subtotal, discount, grand_total)
         $cart->recalcTotals();
 
-        return redirect()->back()->with('success', 'Jumlah diperbarui.');
+        // Kembalikan JSON
+        return response()->json([
+            'success' => true,
+            'line_total' => $item->line_total,
+            'cart_total' => $cart->grand_total
+        ]);
     }
 
     public function checkout(Request $request)
@@ -265,43 +285,24 @@ class CartController extends Controller
             $member = Member::where('phone', $phone)->first();
         }
 
-        if ($member) {
-            $discount = 0;
-            $pointsUsed = 0;
+        $discount = 0;
+        $pointsUsed = 0;
 
-            // Kalau user mau pakai diskon
-            if ($request->boolean('pakai_diskon')) {
-                $points = $member->points;
+        if ($member && $request->boolean('pakai_diskon')) {
+            $points = $member->points;
 
-                // Nilai per poin = Rp100
-                $discount = $points * 100;
+            // Nilai per poin = Rp100
+            $discount = $points * 100;
 
-                // Pastikan diskon tidak melebihi subtotal
-                if ($discount > $subtotal) {
-                    // Hitung poin yang bisa dipakai saja
-                    $pointsUsed = floor($subtotal / 100);
-                    $discount = $pointsUsed * 100;
-                } else {
-                    $pointsUsed = $points;
-                }
-
-                // Kurangi poin
-                $member->points -= $pointsUsed;
-
-                // Kurangi total
-                $total -= $discount;
+            // Pastikan diskon tidak melebihi subtotal
+            if ($discount > $subtotal) {
+                $pointsUsed = floor($subtotal / 100);
+                $discount = $pointsUsed * 100;
+            } else {
+                $pointsUsed = $points;
             }
 
-            // Tambah poin baru setelah checkout
-            $earnedPoints = floor($subtotal / 10000);
-            $member->points += $earnedPoints;
-            $member->last_order_at = now();
-
-            if (!$member->is_active && $subtotal >= 50000) {
-                $member->is_active = true;
-            }
-
-            $member->save();
+            $total -= $discount;
         }
 
         $paid = $request->input('paid_amount');
@@ -340,7 +341,29 @@ class CartController extends Controller
             // Hapus hanya item yang dicentang dari keranjang
             $cart->items()->where('is_checked', true)->delete();
 
+            // --- Proses poin member setelah checkout berhasil ---
+            if ($member) {
+                // Kurangi poin jika diskon dipakai
+                if ($pointsUsed > 0) {
+                    $member->points -= $pointsUsed;
+                }
+
+                // Tambah poin baru
+                $earnedPoints = floor($subtotal / 10000);
+                $member->points += $earnedPoints;
+                $member->last_order_at = now();
+
+                if (!$member->is_active && $subtotal >= 50000) {
+                    $member->is_active = true;
+                }
+
+                $member->save();
+            }
+
             DB::commit();
+
+            // Hapus session member setelah transaksi selesai
+            session()->forget('member_phone');
 
             return redirect()->route('order.invoice', $order->id)
                 ->with('success', "Checkout berhasil! Anda mendapat $earnedPoints poin.");
@@ -364,28 +387,53 @@ class CartController extends Controller
         return redirect()->route('obat.index')->with('success', 'Item berhasil dihapus dari keranjang.');
     }
 
-    public function updateItem(Request $request, $id)
+    public function updateItem(Request $request, CartItem $item)
     {
-        $cart = $this->getCart();
-        $item = $cart->items()->find($id);
-
-        if (!$item) {
-            return back()->with('error', 'Item tidak ditemukan.');
-        }
-
-        $maxQty = $item->obat->stok;
-
         $request->validate([
-            'quantity' => ['required', 'integer', 'min:1', "max:$maxQty"],
-        ], [
-            'quantity.max' => "Jumlah maksimal yang tersedia adalah $maxQty.",
+            'quantity' => 'required|integer|min:1',
         ]);
 
-        $item->quantity = $request->input('quantity');
-        $item->line_total = $item->obat->harga * $item->quantity;
+        $cart = $this->getCart();
+
+        // Pastikan item milik cart ini
+        if ($item->cart_id !== $cart->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
+
+        $newQty = $request->input('quantity');
+        $obat = Obat::find($item->obat_id);
+        if (!$obat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Obat tidak ditemukan.'
+            ]);
+        }
+
+        // Cek stok
+        if ($newQty > $obat->stok) {
+            return response()->json([
+                'success' => false,
+                'message' => "Jumlah melebihi stok tersedia ({$obat->stok})."
+            ]);
+        }
+
+        // Update quantity & line_total
+        $item->quantity = $newQty;
+        $item->line_total = $item->price * $item->quantity;
         $item->save();
 
-        return back()->with('success', 'Jumlah barang berhasil diperbarui.');
+        // Hitung ulang total cart
+        $cart->recalcTotals();
+
+        // Kembalikan JSON untuk AJAX
+        return response()->json([
+            'success' => true,
+            'line_total' => $item->line_total,
+            'cart_total' => $cart->grand_total
+        ]);
     }
 
     public function invoiceShow(Order $order)
@@ -426,22 +474,35 @@ class CartController extends Controller
         return view('transaction.history', compact('transactions', 'title', 'project'));
     }
 
-    public function toggleCheck($id, Request $request)
+    public function toggleCheck(Request $request, $id)
     {
         $item = CartItem::findOrFail($id);
-        $item->is_checked = $request->is_checked ? 1 : 0;
+
+        // Pastikan item milik cart user saat ini (opsional)
+        $cart = auth()->user()->cart ?? null; // atau getCart()
+        if ($cart && $item->cart_id !== $cart->id) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
+
+        // Update status checked
+        $item->is_checked = $request->input('is_checked') ? 1 : 0;
         $item->save();
+
+        // Hitung ulang total cart jika perlu
+        if ($cart) $cart->recalcTotals();
 
         return response()->json(['success' => true]);
     }
 
     public function clearExpired(Cart $cart)
     {
-        if ($cart->isExpired()) {
-            $cart->items()->delete();
-            $cart->delete();
+        // Pastikan cart ini milik user login
+        if ($cart->user_id !== auth()->id()) {
+            abort(403);
         }
 
+        // Hapus semua item
+        $cart->items()->delete();
         return response()->json(['success' => true]);
     }
 
@@ -456,32 +517,38 @@ class CartController extends Controller
         $target = $request->input('no_telp');
         $idsArray = explode(',', $request->input('ids'));
 
-        // Ambil transaksi beserta relasi obat dan member
-        $transactions = \App\Models\OrderItem::with(['obat'])->whereIn('id', $idsArray)->get();
+        // Ambil item beserta relasi order, obat, member
+        $items = \App\Models\OrderItem::with(['obat', 'order.member'])
+            ->whereIn('id', $idsArray)
+            ->get();
 
-        if ($transactions->isEmpty()) {
+        if ($items->isEmpty()) {
             return response()->json(['message' => 'Transaksi tidak ditemukan'], 404);
         }
 
-        $grandTotal = $transactions->sum('line_total');
-        $paidAmount = $transactions->first()->order->paid_amount ?? 0;
-        $change = $transactions->first()->order->change ?? 0;
+        $order = $items->first()->order;
 
-        // Mulai bangun pesan
-        $message = "🏥 Apotek Mii\n";
+        $grandTotal  = $items->sum('line_total');
+        $paidAmount  = $order->paid_amount ?? 0;
+        $change      = $order->change ?? 0;
+        $diskonPoin  = $order->diskon_poin ?? 0;
+        $diskonPersen = $order->diskon_persen ?? 0;
+        $potongan    = ($grandTotal * $diskonPersen) / 100;
+
+        // Bangun pesan
+        $message  = "🏥 Apotek Mii\n";
         $message .= "Jl. Ky Tinggi Rt 009 Rw 03, No.17\n";
         $message .= "Telp: 0812-3456-7890\n";
         $message .= str_repeat('-', 40) . "\n";
         $message .= "Tanggal       : " . now()->format('d-m-Y H:i') . "\n";
-        $message .= "No. Transaksi : #" . $transactions[0]->order_id . "\n";
+        $message .= "No. Transaksi : #" . $order->id . "\n";
         $message .= str_repeat('-', 40) . "\n";
 
-        // Detail item
-        foreach ($transactions as $trx) {
-            $namaProduk = $trx->product_name ?? ($trx->obat->nama ?? '-');
-            $qty        = $trx->quantity;
-            $harga      = number_format($trx->price ?? $trx->obat->harga ?? 0, 0, ',', '.');
-            $subtotal   = number_format($trx->line_total ?? $trx->total, 0, ',', '.');
+        foreach ($items as $item) {
+            $namaProduk = $item->product_name ?? ($item->obat->nama ?? '-');
+            $qty        = $item->quantity;
+            $harga      = number_format($item->price ?? $item->obat->harga ?? 0, 0, ',', '.');
+            $subtotal   = number_format($item->line_total, 0, ',', '.');
             $message   .= "{$namaProduk}\n";
             $message   .= "{$qty} x Rp{$harga} = Rp{$subtotal}\n";
         }
@@ -489,24 +556,17 @@ class CartController extends Controller
         $message .= str_repeat('-', 40) . "\n";
 
         // Info member
-        $memberPhone = optional($transactions->first()->order->member)->phone ?? '-';
-        $memberName  = optional($transactions->first()->order->member)->name ?? '-';
+        $memberName  = optional($order->member)->name ?? '-';
+        $memberPhone = optional($order->member)->phone ?? '-';
         $message .= "Member : {$memberName}\n";
         $message .= "Nomor  : {$memberPhone}\n";
 
-        // Hitung diskon
-        $subtotal = $transactions->sum(function ($t) {
-            return ($t->obat->harga ?? $t->price) * $t->quantity;
-        });
-        $diskonPoin   = $transactions->first()->diskon_poin ?? 0;
-        $diskonPersen = $transactions->first()->diskon_persen ?? 0;
-        $potongan     = ($subtotal * $diskonPersen) / 100;
-
+        // Diskon poin / persentase
         if ($diskonPoin > 0 || $diskonPersen > 0) {
             $message .= "Diskon:\n";
-            if ($diskonPoin > 0) $message .= "- Poin Digunakan : {$diskonPoin} poin\n";
+            if ($diskonPoin > 0)  $message .= "- Poin Digunakan : {$diskonPoin} poin\n";
             if ($diskonPersen > 0) $message .= "- Diskon         : {$diskonPersen}%\n";
-            if ($potongan > 0)    $message .= "- Potongan Harga : Rp" . number_format($potongan, 0, ',', '.') . "\n";
+            if ($potongan > 0)     $message .= "- Potongan Harga : Rp" . number_format($potongan, 0, ',', '.') . "\n";
         }
 
         $message .= "Uang Bayar : Rp" . number_format($paidAmount, 0, ',', '.') . "\n";
