@@ -48,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/cart/item/{id}/toggle-check', [CartController::class, 'toggleCheck'])->name('cart.toggleCheck');
     Route::post('/cart/{cart}/clear-expired', [CartController::class, 'clearExpired'])->name('cart.clear-expired');
     Route::post('/cart/{cart}/sendWa', [CartController::class, 'sendWhatsappMessage'])->name('cart.sendWhatsApp');
+    Route::get('/transaction/{transaction}/detail', [CartController::class, 'transactionDetail'])->name('transaction.detail');
 });
 
 
