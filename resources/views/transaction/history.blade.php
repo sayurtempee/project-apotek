@@ -46,9 +46,12 @@
                                 <tbody>
                                     @foreach ($transaction->items as $item)
                                         <tr>
-                                            <td>{{ $item->product_name }}</td>
-                                            <td>{{ $item->obat->kode ?? '-' }}</td>
-                                            <td>{{ $item->obat->category->nama ?? '-' }}</td>
+                                            <td
+                                                class="{{ $item->obat?->trashed() ? 'text-muted text-decoration-line-through' : '' }}">
+                                                {{ $item->product_name }}
+                                            </td>
+                                            <td>{{ $item->obat?->kode ?? '-' }}</td>
+                                            <td>{{ $item->obat?->category?->nama ?? '-' }}</td>
                                             <td>Rp {{ number_format($item->price, 0, ',', '.') }}</td>
                                             <td>{{ $item->quantity }}</td>
                                             <td>Rp {{ number_format($item->line_total, 0, ',', '.') }}</td>
@@ -59,13 +62,9 @@
                         </div>
 
                         <div class="mt-3">
-                            <p>
-                                <strong>Subtotal:</strong>
-                                Rp {{ number_format($subtotal, 0, ',', '.') }}
-                            </p>
+                            <p><strong>Subtotal:</strong> Rp {{ number_format($subtotal, 0, ',', '.') }}</p>
 
-                            <p>
-                                <strong>Diskon Poin:</strong>
+                            <p><strong>Diskon Poin:</strong>
                                 @if ($discountAmount > 0)
                                     Rp {{ number_format($discountAmount, 0, ',', '.') }}
                                     ({{ number_format($discountPercentage, 2) }}%)
@@ -74,34 +73,30 @@
                                 @endif
                             </p>
 
-                            <p class="mb-3 fs-5">
-                                <strong>Total:</strong>
+                            <p class="mb-3 fs-5"><strong>Total:</strong>
                                 <span class="badge bg-success fs-6">
                                     Rp {{ number_format($transaction->total, 0, ',', '.') }}
                                 </span>
                             </p>
 
-                            <p>
-                                <strong>Jumlah Bayar:</strong>
-                                Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}
-                            </p>
-
-                            <p>
-                                <strong>Kembalian:</strong>
-                                Rp {{ number_format($change, 0, ',', '.') }}
-                            </p>
+                            <p><strong>Jumlah Bayar:</strong> Rp
+                                {{ number_format($transaction->paid_amount, 0, ',', '.') }}</p>
+                            <p><strong>Kembalian:</strong> Rp {{ number_format($change, 0, ',', '.') }}</p>
                         </div>
 
                         <div class="mt-4">
                             <strong>Member:</strong>
                             @if ($transaction->member)
                                 <ul class="list-group list-group-flush ms-2">
-                                    <li class="list-group-item px-0 py-1">Nama: <span
-                                            class="fw-semibold">{{ $transaction->member->name }}</span></li>
-                                    <li class="list-group-item px-0 py-1">Telepon: <span
-                                            class="fw-semibold">{{ $transaction->member->phone }}</span></li>
-                                    <li class="list-group-item px-0 py-1">Poin: <span
-                                            class="fw-semibold">{{ $transaction->member->points }}</span></li>
+                                    <li class="list-group-item px-0 py-1">Nama:
+                                        <span class="fw-semibold">{{ $transaction->member?->name ?? '-' }}</span>
+                                    </li>
+                                    <li class="list-group-item px-0 py-1">Telepon:
+                                        <span class="fw-semibold">{{ $transaction->member?->phone ?? '-' }}</span>
+                                    </li>
+                                    <li class="list-group-item px-0 py-1">Poin:
+                                        <span class="fw-semibold">{{ $transaction->member?->points ?? 0 }}</span>
+                                    </li>
                                 </ul>
                             @else
                                 <span class="badge bg-secondary ms-2">Tanpa Member</span>
