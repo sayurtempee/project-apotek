@@ -589,4 +589,15 @@ class CartController extends Controller
 
         return back()->with('success', 'Data berhasil dikirim ke WhatsApp!');
     }
+
+    public function transactionDetail($id)
+    {
+        $transaction = Order::with('items.obat.category', 'member')->findOrFail($id);
+
+        return view('transaction.detail', [
+            'transaction' => $transaction,
+            'title' => 'Detail Transaksi',
+            'project' => 'Apotek Mii',
+        ]);
+    }
 }
