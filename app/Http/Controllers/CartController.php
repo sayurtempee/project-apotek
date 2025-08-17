@@ -465,13 +465,16 @@ class CartController extends Controller
     public function transaction()
     {
         $transactions = Order::with([
-            'items.obat.category', // load obat & kategori di setiap item
-            'member'               // load member di order
-        ])->orderBy('created_at', 'desc')->paginate(10);
+            'items.obat.category', // items -> obat -> category
+            'member'               // relasi member
+        ])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        $title = 'History Transaksi';
-        $project = 'Apotek Mii';
-        return view('transaction.history', compact('transactions', 'title', 'project'));
+        return view('transaction.history', compact('transactions'), [
+            'title' => 'History Transaksi',
+            'project' => 'Apotek Mii',
+        ]);
     }
 
     public function toggleCheck(Request $request, $id)
