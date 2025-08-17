@@ -12,21 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('obats', function (Blueprint $table) {
-            $table->unsignedBigInteger('unit_id')->nullable()->after('stok');
+            if (!Schema::hasColumn('obats', 'unit_id')) {
+                $table->unsignedBigInteger('unit_id')->nullable()->after('stok');
 
-            $table->foreign('unit_id')->references('id')->on('units')
-                ->onDelete('set null');
+                $table->foreign('unit_id')->references('id')->on('units')
+                    ->onDelete('set null');
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('obats', function (Blueprint $table) {
-            $table->dropForeign(['unit_id']);
-            $table->dropColumn('unit_id');
+            if (Schema::hasColumn('obats', 'unit_id')) {
+                $table->dropForeign(['unit_id']);
+                $table->dropColumn('unit_id');
+            }
         });
     }
 };
