@@ -39,6 +39,20 @@
                                 class="btn btn-sm btn-light ms-2">
                                 <i class="bi bi-download me-1"></i>Download PDF
                             </a>
+
+                            <!-- Tombol Kirim WhatsApp -->
+                            @if ($transaction->member)
+                                <form action="{{ route('cart.sendWhatsApp', ['cart' => $transaction->id]) }}" method="POST"
+                                    class="inline">
+                                    @csrf
+                                    <input type="hidden" name="ids"
+                                        value="{{ implode(',', $transaction->items->pluck('id')->toArray()) }}">
+                                    <input type="hidden" name="no_telp" value="{{ $transaction->member->phone }}">
+                                    <button type="submit" class="btn btn-sm btn-success ms-2">
+                                        <i class="fab fa-whatsapp"></i> Kirim ke WhatsApp
+                                    </button>
+                                </form>
+                            @endif
                         </span>
                     </div>
 
