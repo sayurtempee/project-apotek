@@ -32,7 +32,7 @@ class CartController extends Controller
         // Atur waktu kadaluarsa jika ada item
         if ($cart->items->count() > 0) {
             if (!$cart->expires_at || $cart->isExpired()) {
-                $cart->expires_at = now()->addMinutes(1);
+                $cart->expires_at = now()->addMinutes(5);
                 $cart->save();
             }
         } else {
@@ -126,7 +126,7 @@ class CartController extends Controller
 
         $cart = $this->getCart();
         if (!$cart->expires_at || $cart->isExpired()) {
-            $cart->expires_at = now()->addMinutes(1);
+            $cart->expires_at = now()->addMinutes(5);
             $cart->save();
         }
 
@@ -511,16 +511,14 @@ class CartController extends Controller
 
     public function sendWhatsappMessage(Request $request)
     {
-        // Validasi input
         $request->validate([
             'no_telp' => 'required|string',
             'ids'     => 'required|string',
         ]);
 
-        $target = $request->input('no_telp');
+        $target   = $request->input('no_telp');
         $idsArray = explode(',', $request->input('ids'));
 
-        // Ambil item beserta relasi order, obat, member
         $items = \App\Models\OrderItem::with(['obat', 'order.member'])
             ->whereIn('id', $idsArray)
             ->get();
@@ -531,55 +529,76 @@ class CartController extends Controller
 
         $order = $items->first()->order;
 
-        $grandTotal  = $items->sum('line_total');
-        $paidAmount  = $order->paid_amount ?? 0;
-        $change      = $order->change ?? 0;
-        $diskonPoin  = $order->diskon_poin ?? 0;
-        $diskonPersen = $order->diskon_persen ?? 0;
-        $potongan    = ($grandTotal * $diskonPersen) / 100;
+        $subtotal       = $items->sum('line_total');
+        $grandTotal     = $order->total ?? $subtotal;
+        $paidAmount     = $order->paid_amount ?? 0;
+        $change         = $order->change ?? 0;
+        $discountAmount = $subtotal - $grandTotal;
+        $discountPct    = $subtotal > 0 ? ($discountAmount / $subtotal) * 100 : 0;
 
-        // Bangun pesan
-        $message  = "🏥 Apotek Mii\n";
-        $message .= "Jl. Ky Tinggi Rt 009 Rw 03, No.17\n";
-        $message .= "Telp: 0812-3456-7890\n";
-        $message .= str_repeat('-', 40) . "\n";
-        $message .= "Tanggal       : " . now()->format('d-m-Y H:i') . "\n";
-        $message .= "No. Transaksi : #" . $order->id . "\n";
-        $message .= str_repeat('-', 40) . "\n";
+        // Header
+        $message  = "🏥 *Apotek Mii*\n";
+        $message .= "Cakung Timur, Jakarta Timur\n";
+        $message .= "Gang Bayam No.17\n";
+        $message .= "Telp: (021) 78374839\n";
+        $message .= str_repeat("=", 42) . "\n";
+        $message .= "*Invoice #{$order->id}*\n";
+        $message .= "Tanggal : " . $order->created_at->format('d-m-Y H:i') . "\n";
 
+        // Member info kalau ada
+        if ($order->member) {
+            $message .= "Member : " . ($order->member->name ?? '-') . "\n";
+            $message .= "No. Member : " . ($order->member->phone ?? '-') . "\n";
+        }
+
+        $message .= str_repeat("=", 42) . "\n\n";
+
+        // Table Header
+        $message .= str_pad("Nama Obat", 20) .
+            str_pad("Harga", 10) .
+            str_pad("Qty", 5) .
+            "Subtotal\n";
+        $message .= str_repeat("-", 42) . "\n";
+
+        // Item list
         foreach ($items as $item) {
-            $namaProduk = $item->product_name ?? ($item->obat->nama ?? '-');
-            $qty        = $item->quantity;
-            $harga      = number_format($item->price ?? $item->obat->harga ?? 0, 0, ',', '.');
-            $subtotal   = number_format($item->line_total, 0, ',', '.');
-            $message   .= "{$namaProduk}\n";
-            $message   .= "{$qty} x Rp{$harga} = Rp{$subtotal}\n";
+            $nama     = $item->product_name ?? ($item->obat->nama ?? '-');
+            $harga    = number_format($item->price, 0, ',', '.');
+            $qty      = $item->quantity;
+            $subTotal = number_format($item->line_total, 0, ',', '.');
+
+            $message .= str_pad(substr($nama, 0, 18), 20);
+            $message .= str_pad("Rp$harga", 10);
+            $message .= str_pad($qty, 5);
+            $message .= "Rp$subTotal\n";
         }
 
-        $message .= str_repeat('-', 40) . "\n";
+        $message .= str_repeat("-", 42) . "\n";
 
-        // Info member
-        $memberName  = optional($order->member)->name ?? '-';
-        $memberPhone = optional($order->member)->phone ?? '-';
-        $message .= "Member : {$memberName}\n";
-        $message .= "Nomor  : {$memberPhone}\n";
+        // Total barang
+        $totalQty = $items->sum('quantity');
+        $message .= str_pad("Total Barang: {$totalQty}", 25);
+        $message .= "Total: Rp" . number_format($grandTotal, 0, ',', '.') . "\n";
 
-        // Diskon poin / persentase
-        if ($diskonPoin > 0 || $diskonPersen > 0) {
-            $message .= "Diskon:\n";
-            if ($diskonPoin > 0)  $message .= "- Poin Digunakan : {$diskonPoin} poin\n";
-            if ($diskonPersen > 0) $message .= "- Diskon         : {$diskonPersen}%\n";
-            if ($potongan > 0)     $message .= "- Potongan Harga : Rp" . number_format($potongan, 0, ',', '.') . "\n";
+        // Diskon jika ada
+        if ($discountAmount > 0) {
+            $message .= str_pad("Diskon Poin (" . number_format($discountPct, 2) . "%)", 25);
+            $message .= "- Rp" . number_format($discountAmount, 0, ',', '.') . "\n";
         }
 
-        $message .= "Uang Bayar : Rp" . number_format($paidAmount, 0, ',', '.') . "\n";
-        $message .= "SubTOTAL   : Rp" . number_format($grandTotal, 0, ',', '.') . "\n";
-        $message .= "Kembalian  : Rp" . number_format($change, 0, ',', '.') . "\n";
-        $message .= str_repeat('-', 40) . "\n";
-        $message .= "Terima kasih atas kunjungan Anda!\n";
-        $message .= "Barang yang sudah dibeli tidak dapat dikembalikan.\n";
+        // Jumlah bayar
+        $message .= str_pad("Jumlah Bayar", 25);
+        $message .= "Rp" . number_format($paidAmount, 0, ',', '.') . "\n";
 
-        // Kirim pesan via FonnteService
+        // Kembalian
+        $message .= str_pad("Kembalian", 25);
+        $message .= "Rp" . number_format($change, 0, ',', '.') . "\n";
+
+        $message .= str_repeat("=", 42) . "\n";
+        $message .= "_Terima kasih atas kunjungan Anda!_\n";
+        $message .= "_Barang yang sudah dibeli tidak dapat dikembalikan._\n";
+
+        // Kirim WA via Fonnte
         $response = $this->fonnteService->sendWhatsAppMessage($target, $message);
 
         if (!$response['status'] || (isset($response['data']['status']) && !$response['data']['status'])) {
@@ -587,7 +606,7 @@ class CartController extends Controller
             return response()->json(['message' => 'Error', 'error' => $errorReason], 500);
         }
 
-        return back()->with('success', 'Data berhasil dikirim ke WhatsApp!');
+        return back()->with('success', 'Invoice berhasil dikirim ke WhatsApp!');
     }
 
     public function transactionDetail($id)
