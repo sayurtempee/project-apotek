@@ -4,18 +4,46 @@
 @php
     use Carbon\Carbon;
 @endphp
+<style>
+    /* Hover lembut pada item keranjang */
+    .cart-row:hover {
+        background-color: #f8fafc;
+        /* abu muda */
+        transform: scale(1.01);
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Hover pada tombol */
+    .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+        transition: all 0.15s ease;
+    }
+
+    /* Efek glow pada tombol checkout */
+    .btn-success:hover {
+        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.4);
+    }
+
+    /* Input fokus */
+    input:focus {
+        outline: none !important;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+        border-color: #3b82f6;
+        transition: 0.2s;
+    }
+</style>
 @section('content')
     <div x-data="{ open: false, kode: '' }" @keydown.escape.window="open = false">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             {{-- Filter, Search & Scan (kasir only) --}}
             @if (Auth::user()->role === 'kasir')
                 <div class="mb-6 space-y-4">
-                    {{-- Baris atas: Scan + Search --}}
-                    <div class="flex flex-col sm:flex-row sm:justify-between gap-4">
-                        {{-- Scan barcode --}}
-                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <!-- Grup kiri: Scan -->
+                        <div class="flex items-stretch gap-2 w-full sm:w-auto">
                             <button id="btn-scan" type="button"
-                                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition flex items-center gap-2">
+                                class="flex items-center gap-2 px-4 h-10 bg-blue-600 text-white text-sm rounded shadow hover:bg-blue-700 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <rect x="3" y="7" width="2" height="10" rx="1" fill="currentColor" />
@@ -26,39 +54,37 @@
                                 </svg>
                                 Scan Barcode
                             </button>
-                            <div class="relative flex-1">
-                                <input id="barcode-input" type="text" placeholder="Arahkan scanner lalu tunggu otomatis"
-                                    class="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                                    autocomplete="off" aria-label="Input barcode scanner" autofocus />
-                                <div id="scan-feedback"
-                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-green-500 font-semibold bg-green-100 px-2 py-1 rounded shadow hidden">
-                                    Terscan!
-                                </div>
-                            </div>
+
+                            <input id="barcode-input" type="text" placeholder="Arahkan scanner lalu tunggu otomatis"
+                                class="px-3 h-10 flex-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                autocomplete="off" aria-label="Input barcode scanner" />
                         </div>
 
-                        {{-- Search + Dropdown --}}
+                        <!-- Grup kanan: Search -->
                         <form method="GET" action="{{ route('obat.index') }}"
-                            class="flex flex-wrap gap-2 items-center sm:justify-end">
-                            {{-- Input search --}}
+                            class="flex items-stretch gap-2 w-full sm:w-auto">
                             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari obat..."
-                                class="border rounded px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-green-600">
+                                class="px-3 h-10 w-64 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-green-600" />
 
-                            {{-- Dropdown kategori --}}
-                            <select name="category_id"
-                                class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600">
-                                <option value="">Semua Kategori</option>
-                                @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}"
-                                        {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->nama }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <select name="category_id"
+                                    class="px-3 h-10 pr-8 text-sm border rounded appearance-none focus:outline-none focus:ring-2 focus:ring-green-600">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category->id }}"
+                                            {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->nama }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <!-- Panah custom -->
+                                <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
+                                    ▼
+                                </span>
+                            </div>
 
-                            {{-- Tombol cari --}}
                             <button type="submit"
-                                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                                class="px-4 h-10 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">
                                 Cari
                             </button>
                         </form>

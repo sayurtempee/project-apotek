@@ -3,33 +3,38 @@
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <div class="container py-4">
-        <a href="{{ route('obat.index') }}" class="btn btn-link text-decoration-none mb-3">
+    <div class="container py-5">
+        <!-- Back Button -->
+        <a href="{{ route('obat.index') }}" class="btn btn-outline-secondary rounded-pill px-4 mb-4 shadow-sm">
             <i class="bi bi-arrow-left"></i> Kembali
         </a>
 
         <div class="row g-4">
             <!-- Daftar Barang -->
             <div class="col-lg-8">
-                <div class="card shadow-sm border-0 h-100">
+                <div class="card border-0 shadow-lg h-100">
                     <div
-                        class="card-header bg-gradient bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Keranjang Belanja</h5>
+                        class="card-header bg-gradient bg-primary text-white py-3 d-flex justify-content-between align-items-center rounded-top">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-cart-check me-2"></i> Keranjang Belanja
+                        </h5>
                         @if ($cart->expires_at && $cart->items->count() > 0)
-                            <span class="badge bg-warning text-dark">
+                            <span class="badge bg-warning text-dark p-2 rounded-pill shadow-sm">
+                                <i class="bi bi-clock-history me-1"></i>
                                 Hapus item bisa setelah: <span id="countdown"></span>
                             </span>
                         @endif
                     </div>
+
                     <div class="card-body p-0">
                         @forelse ($cart->items as $item)
                             <div
-                                class="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 border-bottom cart-row">
+                                class="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 border-bottom cart-row bg-light-hover">
                                 <div class="d-flex align-items-center gap-3">
                                     <input type="checkbox" class="form-check-input check-item" data-id="{{ $item->id }}"
                                         {{ $item->is_checked ? 'checked' : '' }}>
                                     <div>
-                                        <h6 class="mb-1 fw-semibold">{{ $item->obat->nama }}</h6>
+                                        <h6 class="mb-1 fw-semibold text-dark">{{ $item->obat->nama }}</h6>
                                         <small class="text-muted">Rp
                                             {{ number_format($item->obat->harga, 0, ',', '.') }}</small>
                                     </div>
@@ -40,23 +45,29 @@
                                         @csrf @method('PUT')
                                         <input type="number" name="quantity" value="{{ old('quantity', $item->quantity) }}"
                                             min="1" max="{{ $item->obat->stok }}"
-                                            class="form-control form-control-sm text-center" style="width: 70px">
-                                        <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
+                                            class="form-control form-control-sm text-center rounded-pill shadow-sm"
+                                            style="width: 80px">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
                                     </form>
-                                    <span class="fw-bold text-primary line-total">Rp
-                                        {{ number_format($item->line_total, 0, ',', '.') }}</span>
-                                    <form action="{{ route('cart.remove', $item->id) }}" method="POST"
+                                    <span class="fw-bold text-primary line-total">
+                                        Rp {{ number_format($item->line_total, 0, ',', '.') }}
+                                    </span>
+                                    {{--  <form action="{{ route('cart.remove', $item->id) }}" method="POST"
                                         onsubmit="return confirm('Hapus item ini?')">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger delete-btn"
-                                            {{ !$cart->isExpired() ? 'disabled' : '' }}>Hapus</button>
-                                    </form>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill delete-btn"
+                                            {{ !$cart->isExpired() ? 'disabled' : '' }}>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>  --}}
                                 </div>
                             </div>
                         @empty
                             <div class="text-center text-muted py-5">
-                                <i class="fas fa-box-open fa-2x mb-2"></i>
-                                <p class="mb-0">Keranjang kosong</p>
+                                <i class="bi bi-box-seam display-6 mb-2"></i>
+                                <p class="mb-0 fw-semibold">Keranjang kosong</p>
                             </div>
                         @endforelse
                     </div>
@@ -65,19 +76,23 @@
 
             <!-- Ringkasan Pembayaran -->
             <div class="col-lg-4">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-gradient bg-success text-white">
-                        <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Pembayaran</h5>
+                <div class="card border-0 shadow-lg h-100">
+                    <div class="card-header bg-gradient bg-success text-white py-3 rounded-top">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-credit-card me-2"></i> Pembayaran
+                        </h5>
                     </div>
                     <div class="card-body">
                         <form action="{{ route('checkout') }}" method="POST" id="checkout-form" novalidate>
                             @csrf
-                            <div class="mb-3">
+                            <!-- Member -->
+                            <div class="mb-4">
                                 <label for="phone" class="form-label fw-bold">No. HP Member</label>
                                 <div class="input-group">
-                                    <input type="text" name="phone" id="phone" class="form-control"
-                                        placeholder="Masukkan nomor HP" value="{{ old('phone', $phone ?? '') }}">
-                                    <button type="button" class="btn btn-primary" id="btn-search-member"
+                                    <input type="text" name="phone" id="phone"
+                                        class="form-control rounded-start-pill" placeholder="Masukkan nomor HP"
+                                        value="{{ old('phone', $phone ?? '') }}">
+                                    <button type="button" class="btn btn-primary rounded-end-pill" id="btn-search-member"
                                         title="Cari Member">
                                         <i class="bi bi-search-heart"></i>
                                     </button>
@@ -87,26 +102,31 @@
 
                             <input type="hidden" name="pakai_diskon" id="input-pakai_diskon" value="0">
 
+                            <!-- Total -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Total</label>
-                                <input type="text" class="form-control bg-light fw-bold" id="total"
+                                <input type="text" class="form-control bg-light fw-bold rounded-pill" id="total"
                                     value="{{ $grandTotal }}" readonly>
                             </div>
 
+                            <!-- Jumlah Bayar -->
                             <div class="mb-3">
                                 <label for="paid_amount" class="form-label fw-bold">Jumlah Bayar</label>
-                                <input type="number" name="paid_amount" class="form-control" id="paid_amount" required
-                                    min="0" step="1">
+                                <input type="number" name="paid_amount" class="form-control rounded-pill" id="paid_amount"
+                                    required min="0" step="1">
                                 <div class="invalid-feedback" id="paid-error">Jumlah bayar kurang dari total.</div>
                             </div>
 
-                            <div class="mb-3">
+                            <!-- Kembalian -->
+                            <div class="mb-4">
                                 <label class="form-label fw-bold">Kembalian</label>
-                                <input type="text" class="form-control bg-light fw-bold" id="change" readonly>
+                                <input type="text" class="form-control bg-light fw-bold rounded-pill" id="change"
+                                    readonly>
                             </div>
 
-                            <button type="submit" class="btn btn-success w-100 fw-bold">
-                                <i class="fas fa-check-circle me-1"></i> Checkout
+                            <!-- Checkout Button -->
+                            <button type="submit" class="btn btn-success w-100 fw-bold rounded-pill shadow-sm py-2">
+                                <i class="bi bi-check-circle me-1"></i> Checkout
                             </button>
                         </form>
                     </div>

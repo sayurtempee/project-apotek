@@ -1,5 +1,105 @@
 @extends('components.app')
 @include('layouts.sidebar')
+<style>
+    :root {
+        --primary: #2E7D32;
+        /* hijau utama sidebar */
+        --primary-dark: #1B5E20;
+        /* hijau tua */
+        --primary-light: #E8F5E9;
+        /* hijau muda */
+    }
+
+    /* Gaya heading utama */
+    h2.text-primary {
+        color: var(--primary) !important;
+    }
+
+    /* Card transaksi */
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .card-header.bg-primary {
+        background: linear-gradient(90deg, var(--primary) 60%, var(--primary-dark) 100%) !important;
+        border: none;
+        font-weight: 600;
+    }
+
+    /* Tombol di header card */
+    .card-header .btn-light {
+        background: #fff;
+        color: var(--primary);
+        border: 1px solid var(--primary-light);
+        transition: 0.2s;
+    }
+
+    .card-header .btn-light:hover {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary-dark);
+    }
+
+    /* Tombol WhatsApp */
+    .btn-success {
+        background: linear-gradient(90deg, #25D366 60%, #128C7E 100%);
+        border: none;
+        transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .btn-success:hover {
+        opacity: 0.9;
+        transform: scale(1.03);
+    }
+
+    /* Modal header */
+    .modal-header.bg-primary {
+        background: var(--primary) !important;
+    }
+
+    /* Table dalam modal */
+    .table thead.table-light th {
+        background: var(--primary-light) !important;
+        color: #333;
+    }
+
+    .table tbody tr:hover {
+        background: #C8E6C9;
+        transition: 0.2s;
+    }
+
+    /* Badge styling */
+    .badge.bg-success {
+        background: var(--primary) !important;
+    }
+
+    /* Pagination */
+    .pagination .page-link {
+        color: var(--primary);
+        border-radius: 8px;
+        margin: 0 3px;
+        border: 1px solid var(--primary-light);
+        transition: 0.2s;
+    }
+
+    .pagination .page-link:hover {
+        background: var(--primary-light);
+        border-color: var(--primary);
+    }
+
+    .pagination .active .page-link {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+</style>
 
 @section('content')
     <div class="container py-4">

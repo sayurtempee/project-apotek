@@ -6,10 +6,19 @@
     <title>Invoice Pembelian #{{ $order->id }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #2E7D32;
+            /* hijau utama (sidebar) */
+            --primary-dark: #1B5E20;
+            /* hijau tua */
+            --primary-light: #E8F5E9;
+            /* hijau muda */
+        }
+
         body {
             font-family: 'Montserrat', Arial, sans-serif;
             margin: 0;
-            background: linear-gradient(135deg, #e0f7fa 0%, #f8fafc 100%);
+            background: linear-gradient(135deg, #f1f8f4 0%, #f8fafc 100%);
             color: #222;
         }
 
@@ -35,7 +44,7 @@
 
         .header h2 {
             margin: 0 0 4px 0;
-            color: #2b7a78;
+            color: var(--primary);
             letter-spacing: 1px;
             font-weight: 700;
             font-size: 28px;
@@ -49,12 +58,12 @@
 
         .divider {
             border: none;
-            border-top: 2px dashed #def2f1;
+            border-top: 2px dashed var(--primary-light);
             margin: 24px 0 18px 0;
         }
 
         h3 {
-            color: #17252a;
+            color: var(--primary-dark);
             margin-top: 0;
             margin-bottom: 10px;
             font-size: 22px;
@@ -72,8 +81,8 @@
             display: inline-block;
             padding: 4px 14px;
             border-radius: 12px;
-            background: #e0f7fa;
-            color: #009688;
+            background: var(--primary-light);
+            color: var(--primary);
             font-size: 13px;
             font-weight: 600;
             margin-left: 10px;
@@ -98,7 +107,7 @@
         }
 
         th {
-            background: #def2f1;
+            background: var(--primary-light);
             color: #222;
             font-weight: 700;
             font-size: 15px;
@@ -109,29 +118,29 @@
         }
 
         tbody tr:hover {
-            background: #e0f7fa;
+            background: #C8E6C9;
             transition: background 0.2s;
         }
 
         .total-row td {
             font-weight: bold;
-            color: #2b7a78;
-            border-top: 2px solid #3aafa9;
-            background: #e6fcf5;
+            color: var(--primary);
+            border-top: 2px solid var(--primary);
+            background: var(--primary-light);
         }
 
         .member-info {
             margin-top: 28px;
-            background: #e6fcf5;
-            border-left: 5px solid #3aafa9;
+            background: var(--primary-light);
+            border-left: 5px solid var(--primary);
             padding: 18px 24px;
             border-radius: 8px;
-            box-shadow: 0 1px 6px rgba(58, 175, 169, 0.07);
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
         }
 
         .member-info h4 {
             margin-top: 0;
-            color: #2b7a78;
+            color: var(--primary-dark);
         }
 
         .action-buttons {
@@ -143,7 +152,7 @@
 
         .action-buttons a,
         .action-buttons button {
-            background: linear-gradient(90deg, #3aafa9 60%, #2b7a78 100%);
+            background: linear-gradient(90deg, var(--primary) 60%, var(--primary-dark) 100%);
             color: #fff;
             border: none;
             border-radius: 6px;
@@ -152,13 +161,13 @@
             cursor: pointer;
             text-decoration: none;
             font-weight: 600;
-            box-shadow: 0 2px 8px rgba(58, 175, 169, 0.08);
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.15);
             transition: background 0.2s, transform 0.2s;
         }
 
         .action-buttons a:hover,
         .action-buttons button:hover {
-            background: linear-gradient(90deg, #2b7a78 60%, #3aafa9 100%);
+            background: linear-gradient(90deg, var(--primary-dark) 60%, var(--primary) 100%);
             transform: translateY(-2px) scale(1.03);
         }
 

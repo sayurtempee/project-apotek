@@ -21,32 +21,35 @@
     {{-- Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         @if (Auth::user()->role === 'admin')
-            <x-dashboard-card title="Admin" :count="$adminCount" icon="fa-user-shield" bg="blue" />
-            <x-dashboard-card title="Kasir" :count="$kasirCount" icon="fa-cash-register" bg="green" />
-            <x-dashboard-card title="Total Penjualan" :count="number_format($totalSales, 0, ',', '.')" icon="fa-sack-dollar" bg="purple" />
-            <x-dashboard-card title="Kategori Obat" :count="$kategoriCount" icon="fa-tags" bg="indigo" />
+            <x-dashboard-card title="Admin" :count="$adminCount" icon="fa-solid fa-user-shield" bg="from-blue-500 to-blue-600" />
+            <x-dashboard-card title="Kasir" :count="$kasirCount" icon="fa-solid fa-cash-register"
+                bg="from-green-500 to-green-600" />
+            <x-dashboard-card title="Total Penjualan" :count="number_format($totalSales, 0, ',', '.')" icon="fa-solid fa-sack-dollar"
+                bg="from-purple-500 to-purple-600" />
+            <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-solid fa-pills" bg="from-red-500 to-red-600" />
         @endif
 
         @if (Auth::user()->role === 'kasir')
-            <x-dashboard-card title="Member" :count="$memberCount" icon="fa-users" bg="yellow" />
+            <x-dashboard-card title="Member" :count="$memberCount" icon="fa-solid fa-users" bg="from-yellow-500 to-yellow-600" />
         @endif
 
-        <x-dashboard-card title="Penjualan Hari Ini" :count="number_format($totalSalesToday, 0, ',', '.')" icon="fa-calendar-day" bg="green" />
-        <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-pills" bg="red" />
+        <x-dashboard-card title="Penjualan Hari Ini" :count="number_format($totalSalesToday, 0, ',', '.')" icon="fa-solid fa-calendar-day"
+            bg="from-green-500 to-green-600" />
+        <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-solid fa-pills" bg="from-red-500 to-red-600" />
     </div>
 
     {{-- Statistik Penjualan --}}
-    <div class="bg-white rounded-2xl shadow p-6 mb-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
             <div>
-                <h2 class="text-xl font-semibold text-gray-800">Statistik Penjualan</h2>
-                <p class="text-sm text-gray-500">Ringkasan transaksi berdasarkan filter</p>
+                <h2 class="text-xl font-bold text-gray-800">📊 Statistik Penjualan</h2>
+                <p class="text-sm text-gray-500">Lihat performa penjualan berdasarkan periode</p>
             </div>
 
-            <div class="flex flex-wrap gap-3">
-                <div class="relative">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Filter</label>
-                    <select id="filter-type" class="border rounded-md px-4 py-2">
+            <div class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Filter</label>
+                    <select id="filter-type" class="border rounded-lg px-4 py-2 focus:ring focus:ring-blue-200">
                         <option value="day">Per Hari</option>
                         <option value="month" selected>Per Bulan</option>
                         <option value="year">Per Tahun</option>
@@ -54,30 +57,38 @@
                     </select>
                 </div>
                 <div id="dynamic-dropdown"></div>
-                <div class="flex gap-3">
+
+                <div class="flex gap-2">
                     <a href="{{ route('dashboard.export.pdf.month') }}"
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Unduh PDF Bulan Ini</a>
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                        Bulan Ini
+                    </a>
                     <a href="{{ route('dashboard.export.pdf.year') }}"
-                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Unduh PDF Tahun Ini</a>
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+                        Tahun Ini
+                    </a>
                     <a href="{{ route('dashboard.export.pdf.all') }}"
-                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Unduh Seluruh PDF</a>
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition">
+                        Semua Data
+                    </a>
                 </div>
             </div>
         </div>
 
         {{-- Charts --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <h2 class="font-semibold mb-2">Total Penjualan (Rp)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-50 p-4 rounded-xl">
+                <h2 class="font-semibold text-gray-700 mb-3">Total Penjualan (Rp)</h2>
                 <canvas id="salesChart" height="200"></canvas>
             </div>
-            <div>
-                <h2 class="font-semibold mb-2">Jumlah Transaksi</h2>
+            <div class="bg-gray-50 p-4 rounded-xl">
+                <h2 class="font-semibold text-gray-700 mb-3">Jumlah Transaksi</h2>
                 <canvas id="transaksiChart" height="200"></canvas>
             </div>
         </div>
     </div>
 
+    {{-- Script Chart --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -133,6 +144,26 @@
                             fill: true,
                             tension: 0.4
                         }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f3f4f6'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
                     }
                 });
 
@@ -149,6 +180,26 @@
                             borderColor: '#22C55E',
                             borderWidth: 1
                         }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f3f4f6'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -188,7 +239,7 @@
                 }
             }
 
-            // Inisialisasi awal
+            // Init
             renderDropdown(filterType.value);
             attachDropdownListener(filterType.value);
             fetchChartData({
