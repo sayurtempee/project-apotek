@@ -22,7 +22,7 @@
         @endif  --}}
         <div
             class="@yield('bodyClass', 'mt-16 p-6 font-sans')
-                   {{ request()->routeIs('cart.index', 'login', 'order.invoice') ? '' : 'lg:ml-64' }}">
+                   {{ request()->routeIs('cart.index', 'login', 'order.invoice', 'home') ? '' : 'lg:ml-64' }}">
             @yield('content')
         </div>
     </div>
