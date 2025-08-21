@@ -71,7 +71,7 @@
                     <div x-show="open" @click.outside="open = false" x-transition
                         class="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
                         <a href="{{ route('profile.index') }}"
-                            class="block px-5 py-3 text-gray-700 hover:bg-[#2E7D32]/10 font-semibold transition">
+                            class="block px-5 py-3 text-gray-700 hover:bg-[#2E7D32]/10 font-semibold transition no-underline hover:no-underline">
                             <i class="fas fa-user mr-2 text-[#2E7D32]"></i> Profile
                         </a>
                         <form action="{{ route('logout') }}" method="POST">
