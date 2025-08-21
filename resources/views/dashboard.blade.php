@@ -27,15 +27,17 @@
             <x-dashboard-card title="Total Penjualan" :count="number_format($totalSales, 0, ',', '.')" icon="fa-solid fa-sack-dollar"
                 bg="from-purple-500 to-purple-600" />
             <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-solid fa-pills" bg="from-red-500 to-red-600" />
+            <x-dashboard-card title="Kategori" :count="$kategoriCount" icon="fa-solid fa-pills" bg="from-red-500 to-red-600" />
         @endif
 
         @if (Auth::user()->role === 'kasir')
-            <x-dashboard-card title="Member" :count="$memberCount" icon="fa-solid fa-users" bg="from-yellow-500 to-yellow-600" />
+            <x-dashboard-card title="Member" :count="$memberCount" icon="fa-solid fa-users"
+                bg="from-yellow-500 to-yellow-600" />
+            <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-solid fa-pills" bg="from-red-500 to-red-600" />
         @endif
 
         <x-dashboard-card title="Penjualan Hari Ini" :count="number_format($totalSalesToday, 0, ',', '.')" icon="fa-solid fa-calendar-day"
             bg="from-green-500 to-green-600" />
-        <x-dashboard-card title="Obat" :count="$obatCount" icon="fa-solid fa-pills" bg="from-red-500 to-red-600" />
     </div>
 
     {{-- Statistik Penjualan --}}
