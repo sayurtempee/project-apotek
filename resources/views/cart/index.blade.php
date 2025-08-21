@@ -108,11 +108,24 @@
                                     value="{{ $grandTotal }}" readonly>
                             </div>
 
-                            <!-- Jumlah Bayar -->
+                            <!-- Metode Bayar -->
                             <div class="mb-3">
+                                <label for="payment_method" class="form-label fw-bold">Metode Bayar</label>
+                                <select name="payment_method" id="payment_method"
+                                    class="form-select rounded-pill" required>
+
+                                    <option value="" disabled selected>-- Pilih Metode Pembayaran --</option>
+                                    <option value="qris">💳 QRIS</option>
+                                    <option value="mbanking">📱 M-Banking</option>
+                                    <option value="cash">💵 Tunai</option>
+                                </select>
+                            </div>
+
+                            <!-- Jumlah Bayar (hanya muncul jika tunai) -->
+                            <div class="mb-3 d-none" id="paid_amount_group">
                                 <label for="paid_amount" class="form-label fw-bold">Jumlah Bayar</label>
                                 <input type="number" name="paid_amount" class="form-control rounded-pill" id="paid_amount"
-                                    required min="0" step="1">
+                                    min="0" step="1">
                                 <div class="invalid-feedback" id="paid-error">Jumlah bayar kurang dari total.</div>
                             </div>
 
@@ -278,6 +291,17 @@
                     })
                     .catch(() => alert('Kesalahan koneksi.'));
             });
+        });
+
+        document.getElementById('payment_method').addEventListener('change', function() {
+            const paidGroup = document.getElementById('paid_amount_group');
+            if (this.value === 'cash') {
+                paidGroup.classList.remove('d-none');
+                document.getElementById('paid_amount').setAttribute('required', true);
+            } else {
+                paidGroup.classList.add('d-none');
+                document.getElementById('paid_amount').removeAttribute('required');
+            }
         });
 
         // Countdown hapus item
