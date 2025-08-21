@@ -24,7 +24,16 @@ class DashboardController extends Controller
         $kasirCount = User::where('role', 'kasir')->count();
 
         // Informasi entitas
-        $obatCount = Obat::count();
+        $user = auth()->user();
+
+        if ($user->role === 'kasir') {
+            // Kasir: hanya hitung obat yang belum kadaluarsa
+            $obatCount = Obat::where('kadaluarsa', '>=', now())->count();
+        } else {
+            // Admin: semua obat dihitung
+            $obatCount = Obat::count();
+        }
+
         $kategoriCount = Category::count();
         $memberCount = Member::count();
 
