@@ -62,15 +62,15 @@
 
                 <div class="flex gap-2">
                     <a href="{{ route('dashboard.export.pdf.month') }}"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition no-underline hover:no-underline">
                         Bulan Ini
                     </a>
                     <a href="{{ route('dashboard.export.pdf.year') }}"
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition no-underline hover:no-underline">
                         Tahun Ini
                     </a>
                     <a href="{{ route('dashboard.export.pdf.all') }}"
-                        class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition">
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition no-underline hover:no-underline">
                         Semua Data
                     </a>
                 </div>
