@@ -42,7 +42,6 @@
                                 <div class="mt-3 mt-md-0 d-flex align-items-center gap-2">
                                     <form action="{{ route('cart.item.update', $item->id) }}" method="POST"
                                         class="d-flex align-items-center gap-2 quantity-form">
-                                        @csrf @method('PUT')
                                         <input type="number" name="quantity" value="{{ old('quantity', $item->quantity) }}"
                                             min="1" max="{{ $item->obat->stok }}"
                                             class="form-control form-control-sm text-center rounded-pill shadow-sm"
@@ -255,7 +254,7 @@
                 const url = form.action;
 
                 fetch(url, {
-                        method: 'POST',
+                        method: 'POST', // tetap POST
                         headers: {
                             'X-CSRF-TOKEN': csrfToken
                         },
@@ -276,7 +275,8 @@
                         } else {
                             alert(res.message || 'Gagal update quantity.');
                         }
-                    }).catch(() => alert('Kesalahan koneksi.'));
+                    })
+                    .catch(() => alert('Kesalahan koneksi.'));
             });
         });
 
