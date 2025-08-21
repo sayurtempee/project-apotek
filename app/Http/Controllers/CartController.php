@@ -32,7 +32,7 @@ class CartController extends Controller
         // Atur waktu kadaluarsa jika ada item
         if ($cart->items->count() > 0) {
             if (!$cart->expires_at || $cart->isExpired()) {
-                $cart->expires_at = now()->addMinutes(5);
+                $cart->expires_at = now()->addMinutes(1);
                 $cart->save();
             }
         } else {
@@ -126,7 +126,7 @@ class CartController extends Controller
 
         $cart = $this->getCart();
         if (!$cart->expires_at || $cart->isExpired()) {
-            $cart->expires_at = now()->addMinutes(5);
+            $cart->expires_at = now()->addMinutes(1);
             $cart->save();
         }
 
