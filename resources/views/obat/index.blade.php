@@ -93,12 +93,12 @@
                     {{-- Baris bawah: kategori cepat --}}
                     <div class="flex flex-wrap gap-2">
                         <a href="{{ route('obat.index') }}"
-                            class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white' }}">
+                            class="no-underline px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white' }}">
                             Semua
                         </a>
                         @foreach ($categories as $category)
                             <a href="{{ route('obat.index', ['category_id' => $category->id]) }}"
-                                class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') == $category->id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                class="no-underline px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 {{ request('category_id') == $category->id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
                                 <img src="{{ asset('storage/' . $category->foto) }}" alt="{{ $category->nama }}"
                                     class="w-5 h-5 object-contain rounded-full border border-gray-300">
                                 {{ $category->nama }}
