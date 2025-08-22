@@ -29,6 +29,13 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// forgot password
+Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('forgot.password.form');
+Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('forgot.password');
+
+// reset password
+Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])->name('reset.password.form');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset.password');
 
 // ==============================
 // Protected Routes (hanya user login)
