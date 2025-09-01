@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+use App\Services\MailerService;
 
 class AuthController extends Controller
 {
@@ -101,34 +103,14 @@ class AuthController extends Controller
             ]
         );
 
-        // try {
-        //     // === SMTP CONFIG ===
-        //     $mail->isSMTP();
-        //     $mail->Host = 'smtp.gmail.com';
-        //     $mail->SMTPAuth = true;
-        //     $mail->Username = 'gemoyy71jkt@gmail.com'; // email kamu
-        //     $mail->Password = 'bgjn oprw pkxu kewi';   // gunakan App Password Gmail
-        //     $mail->SMTPSecure = 'tls';
-        //     $mail->Port = 587;
+        $resetLink = url('/reset-password?token=' . $token . '&email=' . urlencode($user->email));
+        $sent = MailerService::sendResetEmail($user->email, $resetLink);
 
-        //     // === RECIPIENT ===
-        //     $mail->setFrom('gemoyy71jkt@gmail.com', 'Apotek Mii');
-        //     $mail->addAddress($request->email);
-
-        //     // === CONTENT ===
-        //     $mail->isHTML(true);
-        //     $mail->Subject = 'Reset Password Link';
-        //     $mail->Body    = "Klik link berikut untuk reset password: <a href='$resetLink'>$resetLink</a>";
-
-        //     $mail->send();
-        //     return back()->with('status', 'Link reset password sudah dikirim ke email Anda!');
-        // } catch (Exception $e) {
-        //     return back()->withErrors(['email' => "Email tidak dapat dikirim. Error: {$mail->ErrorInfo}"]);
-        // }
-
-        $user->notify(new ResetPasswordNotification($token));
-
-        return back()->with('status', 'Link reset password sudah dikirim ke email Anda!');
+        if ($sent === true) {
+            return back()->with('status', 'Link reset password sudah dikirim ke email Anda!');
+        } else {
+            return back()->withErrors(['email' => "Email tidak dapat dikirim. Error: {$sent}"]);
+        }
     }
 
     // ================= RESET PASSWORD ==================
@@ -137,7 +119,7 @@ class AuthController extends Controller
         $token = $request->query('token');
         $title = 'Reset Password';
         $project = 'Apotek Mii';
-        return view('auth.reset_password', ['token' => $token, 'title' => $title, 'project' => $project]);
+        return view('auth.reset_password', ['token' => $token, 'title' => $title, 'project' => $project, 'email' => $request->query('email')]);
     }
 
     public function resetPassword(Request $request)
